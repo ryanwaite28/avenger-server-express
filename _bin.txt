@@ -1,0 +1,73 @@
+export class ModelName extends Model {}
+ModelName.init({
+  
+}, common_options);
+
+
+
+
+
+
+
+
+export class Answer extends Model {}
+Answer.init({
+  id:                        { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+  
+}, common_options);
+
+
+
+export class AnswerReaction extends Model {}
+AnswerReaction.init({
+  id:                   { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+  user_id:              { type: DataTypes.INTEGER, allowNull: false, references: { model: User, key: 'id' } },
+  answer_id:         { type: DataTypes.INTEGER, allowNull: false, references: { model: Answer, key: 'id' } },
+  type:                 { type: DataTypes.STRING, allowNull: true, defaultValue: '' },
+  uuid:                 { type: DataTypes.STRING, unique: true, defaultValue: DataTypes.UUIDV1 }
+}, common_options);
+
+
+
+
+export class AnswerComment extends Model {}
+AnswerComment.init({
+  id:                   { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+  user_id:              { type: DataTypes.INTEGER, allowNull: false, references: { model: User, key: 'id' } },
+  answer_id:         { type: DataTypes.INTEGER, allowNull: false, references: { model: Answer, key: 'id' } },
+  body:                 { type: DataTypes.TEXT, allowNull: true, defaultValue: '' },
+  uuid:                 { type: DataTypes.STRING, unique: true, defaultValue: DataTypes.UUIDV1 }
+}, common_options);
+
+
+
+export class AnswerCommentReaction extends Model {}
+AnswerCommentReaction.init({
+  id:                   { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+  user_id:              { type: DataTypes.INTEGER, allowNull: false, references: { model: User, key: 'id' } },
+  comment_id:           { type: DataTypes.INTEGER, allowNull: false, references: { model: AnswerComment, key: 'id' } },
+  type:                 { type: DataTypes.STRING, allowNull: true, defaultValue: '' },
+  uuid:                 { type: DataTypes.STRING, unique: true, defaultValue: DataTypes.UUIDV1 }
+}, common_options);
+
+
+
+export class AnswerCommentReply extends Model {}
+AnswerCommentReply.init({
+  id:                   { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+  user_id:              { type: DataTypes.INTEGER, allowNull: false, references: { model: User, key: 'id' } },
+  comment_id:           { type: DataTypes.INTEGER, allowNull: false, references: { model: AnswerComment, key: 'id' } },
+  body:                 { type: DataTypes.TEXT, allowNull: true, defaultValue: '' },
+  uuid:                 { type: DataTypes.STRING, unique: true, defaultValue: DataTypes.UUIDV1 }
+}, common_options);
+
+
+
+export class AnswerCommentReplyReaction extends Model {}
+AnswerCommentReplyReaction.init({
+  id:                   { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+  user_id:              { type: DataTypes.INTEGER, allowNull: false, references: { model: User, key: 'id' } },
+  reply_id:             { type: DataTypes.INTEGER, allowNull: false, references: { model: AnswerCommentReply, key: 'id' } },
+  type:                 { type: DataTypes.STRING, allowNull: true, defaultValue: '' },
+  uuid:                 { type: DataTypes.STRING, unique: true, defaultValue: DataTypes.UUIDV1 }
+}, common_options);
