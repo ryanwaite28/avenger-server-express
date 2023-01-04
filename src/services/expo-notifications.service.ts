@@ -2,7 +2,7 @@
 
 import { Expo, ExpoPushMessage, ExpoPushTicket } from 'expo-server-sdk';
 import { PlainObject } from '../interfaces/common.interface';
-import { IUserExpoDevice } from '../interfaces/app.interface';
+import { IUserExpoDevice } from '../interfaces/avenger.models.interface';
 import { get_user_expo_devices } from '../repos/users.repo';
 
 // Create a new Expo SDK client
@@ -11,9 +11,9 @@ const EXPO = new Expo({ accessToken: process.env.EXPO_ACCESS_TOKEN });
 
 
 
-export class ExpoPushNotificationsService {
+export class ExpoPushUserNotificationsService {
 
-  static async sendUserPushNotification(params: {
+  static async sendUserPushUserNotification(params: {
     user_id: number,
     message: string,
     data?: PlainObject,
@@ -70,7 +70,7 @@ export class ExpoPushNotificationsService {
       console.log(`push notes sent:`, { user_id, tickets, expo_push_messages, chunks });
     }
     catch (error) {
-      console.log(`sendUserPushNotification error`);
+      console.log(`sendUserPushUserNotification error`);
       console.log(error);
     }
   }

@@ -1,3 +1,4 @@
+import { BASE64_REGEX } from "../regex/common.regex";
 import { uniqueValue } from "./helpers.utils";
 
 const cloudinary = require('cloudinary').v2;
@@ -30,9 +31,8 @@ export function upload_file(file: any): Promise<IUploadFile> {
   });
 }
 
-export const base64Regex = /^data:([A-Za-z-+\/]+);base64,(.+)$/;
 export function decodeBase64Image(dataString: string) {
-  let matches = dataString.match(base64Regex);
+  let matches = dataString.match(BASE64_REGEX);
   let response: { image_type: string, image_data: Buffer } = {
     image_data: Buffer.from(''),
     image_type: '',

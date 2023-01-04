@@ -6,18 +6,18 @@ import { TokensService } from './tokens.service';
 import { get_user_notification_last_opened, update_user_notification_last_opened } from '../repos/_common.repo';
 import { ServiceMethodAsyncResults, ServiceMethodResults } from '../interfaces/common.interface';
 import { populate_notification_obj } from '../utils/notifications.utils';
-import { Notification, User } from '../models/avenger.model';
+import { UserNotification, User } from '../models/avenger.model';
 
 
 
 
-export class NotificationsService {
+export class UserNotificationsService {
   
   // request handlers
 
   static async get_user_notifications(user_id: number, notification_id: number): ServiceMethodAsyncResults {
     const notifications_models = await CommonRepo.paginateTable(
-      Notification,
+      UserNotification,
       'to_id',
       user_id,
       notification_id
@@ -47,7 +47,7 @@ export class NotificationsService {
 
   static async get_user_notifications_all(user_id: number): ServiceMethodAsyncResults {
     const notifications_models = await CommonRepo.getAll(
-      Notification,
+      UserNotification,
       'to_id',
       user_id,
     );
@@ -80,7 +80,7 @@ export class NotificationsService {
     console.log({ where });
 
     const notifications_models = await CommonRepo.paginateTable(
-      Notification,
+      UserNotification,
       'to_id',
       user_id,
       notification_id,
@@ -120,7 +120,7 @@ export class NotificationsService {
     console.log({ where });
 
     const notifications_models = await CommonRepo.getAll(
-      Notification,
+      UserNotification,
       'to_id',
       user_id,
       undefined,

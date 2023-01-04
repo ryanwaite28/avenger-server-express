@@ -8,8 +8,8 @@ import { ApiKey, User, UserExpoDevice } from '../models/avenger.model';
 import { PlainObject } from '../interfaces/common.interface';
 import { user_attrs_slim } from '../utils/constants.utils';
 import { convertModelCurry, convertModelsCurry, convertModel } from '../utils/helpers.utils';
-import { IApiKey, IUser, IUserExpoDevice } from '../interfaces/app.interface';
-import { UserSignUpDto } from '../dto/user.dto';
+import { IApiKey, IUser, IUserExpoDevice } from '../interfaces/avenger.models.interface';
+import { UpdateUserDto, UserSignUpDto, UserSignInDto } from '../dto/user.dto';
 
 
 
@@ -22,9 +22,7 @@ const convertUserExpoDeviceModels = convertModelsCurry<IUserExpoDevice>();
 
 
 
-export async function get_user_by_where(
-  whereClause: WhereOptions
-) {
+export async function get_user_by_where(whereClause: WhereOptions) {
   const user_model = await User.findOne({
     where: whereClause,
     attributes: user_attrs_slim
@@ -33,19 +31,14 @@ export async function get_user_by_where(
   return user_model;
 }
 
-export async function create_user(
-  params: UserSignUpDto
-) {
-  const new_user_model = await User.create({
-    ...params
-  });
+export async function create_user(params: UserSignUpDto) {
+  const createOptions = { ...params };
+  const new_user_model = await User.create(createOptions);
   const user = await get_user_by_id(new_user_model.dataValues.id);
   return user!;
 }
 
-export async function get_random_users(
-  limit: number
-) {
+export async function get_random_users(limit: number) {
   const users = await User.findAll({
     limit,
     order: [fn( 'RANDOM' )],
@@ -67,9 +60,7 @@ export async function get_random_users(
   return users;
 }
 
-export async function get_user_by_email(
-  email: string
-) {
+export async function get_user_by_email(email: string) {
   try {
     const userModel = await User.findOne({
       where: { email },
@@ -83,9 +74,7 @@ export async function get_user_by_email(
   }
 }
 
-export async function get_user_by_paypal(
-  paypal: string
-) {
+export async function get_user_by_paypal(paypal: string) {
   try {
     const userModel = await User.findOne({
       where: { paypal },
@@ -99,9 +88,7 @@ export async function get_user_by_paypal(
   }
 }
 
-export async function get_user_by_phone(
-  phone: string
-) {
+export async function get_user_by_phone(phone: string) {
   try {
     const userModel = await User.findOne({
       where: { phone },
@@ -153,9 +140,7 @@ export async function get_user_by_stripe_customer_account_id(stripe_customer_acc
   return user_model;
 }
 
-export async function get_user_by_username(
-  username: string
-) {
+export async function get_user_by_username(username: string) {
   const user_model = await User.findOne({
     where: { username },
     attributes: { exclude: ['password'] },
@@ -168,9 +153,7 @@ export async function get_user_by_username(
   return user_model;
 }
 
-export async function get_user_by_uuid(
-  uuid: string
-) {
+export async function get_user_by_uuid(uuid: string) {
   try {
     const user_model = await User.findOne({
       where: { uuid },
@@ -192,36 +175,12 @@ export async function get_user_by_uuid(
   }
 }
 
-export async function update_user(
-  newState: Partial<{
-    email: string;
-    paypal: string;
-    username: string;
-    phone: string | null;
-    temp_phone: string | null;
-    bio: string;
-    location: string;
-    password: string;
-    icon_link: string;
-    icon_id: string;
-    wallpaper_link: string;
-    wallpaper_id: string;
-    email_verified: boolean;
-    phone_verified: boolean;
-    stripe_account_verified: boolean;
-    stripe_account_id: string;
-    stripe_customer_account_id: string;
-    platform_subscription_id: string,
-  }>,
-  whereClause: WhereOptions
-) {
+export async function update_user(newState: Partial<UpdateUserDto>, whereClause: WhereOptions) {
   try {
-    const user_model_update = await User.update(
-      newState as any,
-      { where: whereClause }
-    );
+    const user_model_update = await User.update(newState, { where: whereClause, returning: true });
     return user_model_update;
-  } catch (e) {
+  }
+  catch (e) {
     console.log({
       errorMessage: `update_user error - `,
       e,
@@ -285,13 +244,15 @@ export function get_user_expo_devices(user_id: number) {
   .then(convertUserExpoDeviceModels);
 }
 
-export function register_expo_device_and_push_token(user_id: number, token: string, device_info: PlainObject | null = null) {
-  const params = {
-    user_id,
-    token,
-    device_info: device_info && JSON.stringify(device_info)
-  };
-  console.log(`register_expo_device_and_push_token:`, { params });
+export function register_expo_device_and_push_token(params: {
+  user_id: number,
+  token: string,
+  device_info?: PlainObject | null 
+}) {
+  const { user_id, token, device_info } = params;
+  const useDeviceInfo = device_info && JSON.stringify(device_info);
+  const createParams = { user_id, token, device_info: useDeviceInfo };
+  console.log(`register_expo_device_and_push_token:`, { createParams });
   return UserExpoDevice.create(params)
   .then((model) => convertUserExpoDeviceModel(model)!);
 }

@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from 'express';
 import { User } from '../models/avenger.model';
 import { HttpStatusCode } from '../enums/http-codes.enum';
-import { IUser } from '../interfaces/app.interface';
+import { IUser } from '../interfaces/avenger.models.interface';
 import { get_user_by_id } from '../repos/users.repo';
 import { user_attrs_slim } from '../utils/constants.utils';
 import { AuthorizeJWT } from '../utils/helpers.utils';

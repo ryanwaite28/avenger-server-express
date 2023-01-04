@@ -12,8 +12,8 @@ import {
 } from 'sequelize';
 import { convertModel, convertModelCurry, convertModels } from '../utils/helpers.utils';
 import { MyModelStatic, PlainObject } from '../interfaces/common.interface';
-import { IUserNotificationsLastOpened } from '../interfaces/app.interface';
-import { UserNotificationLastOpened } from '../models/avenger.model';
+import { IUserUserNotificationLastOpened } from '../interfaces/avenger.models.interface';
+import { UserUserNotificationLastOpened } from '../models/avenger.model';
 
 
 
@@ -346,11 +346,11 @@ export async function get_user_ratings_stats_via_model(ratingsModel: MyModelStat
 
 
 export async function get_user_notification_last_opened(user_id: number) {
-  const converter = convertModelCurry<IUserNotificationsLastOpened>();
-  let data = await UserNotificationLastOpened.findOne({ where: { user_id } }).then(converter);
+  const converter = convertModelCurry<IUserUserNotificationLastOpened>();
+  let data = await UserUserNotificationLastOpened.findOne({ where: { user_id } }).then(converter);
 
   if (!data) {
-    data = await UserNotificationLastOpened.create({ user_id }).then(converter);
+    data = await UserUserNotificationLastOpened.create({ user_id }).then(converter);
   }
 
   console.log(data);
@@ -359,8 +359,8 @@ export async function get_user_notification_last_opened(user_id: number) {
 }
 
 export async function update_user_notification_last_opened(user_id: number) {
-  const converter = convertModelCurry<IUserNotificationsLastOpened>();
-  let data = await UserNotificationLastOpened.update({ notifications_last_opened: fn('NOW') }, { returning: true, where: { user_id } }).then(updates => {
+  const converter = convertModelCurry<IUserUserNotificationLastOpened>();
+  let data = await UserUserNotificationLastOpened.update({ notifications_last_opened: fn('NOW') }, { returning: true, where: { user_id } }).then(updates => {
     console.log({ user_id, updates });
     const i = converter(updates[1] && updates[1][0]);
     return i;

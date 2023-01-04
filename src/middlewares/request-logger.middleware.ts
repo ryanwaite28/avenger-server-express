@@ -15,7 +15,7 @@ export function RequestLoggerMiddleware(request: Request, response: Response, ne
     query: request.query,
     signed_cookies: request.signedCookies,
   });
-  console.log(`======= NEXT =======\n\n\n`);
+  console.log(`======= END RequestLoggerMiddleware; NEXT =======\n\n\n`);
 
   return next();
 }

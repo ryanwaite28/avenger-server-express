@@ -3,7 +3,7 @@ import * as nunjucks from 'nunjucks';
 import * as path from 'path';
 
 const htmlPath = path.join(__dirname, '../_public/static/html');
-export function installExpressApp(app: Express.Application) {
+export function installTemplatesExpressApp(app: Express.Application) {
   nunjucks.configure(htmlPath, {
     autoescape: true,
     express: app

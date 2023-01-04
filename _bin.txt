@@ -71,3 +71,32 @@ AnswerCommentReplyReaction.init({
   type:                 { type: DataTypes.STRING, allowNull: true, defaultValue: '' },
   uuid:                 { type: DataTypes.STRING, unique: true, defaultValue: DataTypes.UUIDV1 }
 }, common_options);
+
+
+
+
+
+
+
+
+:([\s]+)\{(.*)(STRING|DATE|TEXT|JSON)(.*)allowNull: true(.*)\},?       ->   : string | null,
+:([\s]+)\{(.*)(STRING|DATE|TEXT|JSON)(.*)allowNull: false(.*)\},?       ->   : string,
+
+:([\s]+)\{(.*)(INTEGER|FLOAT|DOUBLE)(.*)allowNull: true(.*)\},?   ->   : number | null,
+:([\s]+)\{(.*)(INTEGER|FLOAT|DOUBLE)(.*)allowNull: false(.*)\},?   ->   : number,
+
+:([\s]+)\{(.*)(BOOLEAN)(.*)allowNull: true(.*)\},?                ->   : boolean | null,
+:([\s]+)\{(.*)(BOOLEAN)(.*)allowNull: false(.*)\},?                ->   : boolean,
+
+
+
+
+
+
+export class CreateDto {
+
+}
+
+export class UpdateDto {
+  
+}

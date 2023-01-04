@@ -1,7 +1,7 @@
 import socket_io from 'socket.io';
 import { PlainObject } from '../interfaces/common.interface';
 import { COMMON_SOCKET_EVENT_TYPES } from '../enums/avenger.enum';
-import { IUser } from '../interfaces/app.interface';
+import { IUser } from '../interfaces/avenger.models.interface';
 import { decodeJWT } from '../utils/helpers.utils';
 
 

@@ -12,7 +12,7 @@ import {
 import { PlainObject } from '../interfaces/common.interface';
 import { send_sms } from '../utils/sms-client.utils';
 import { validatePhone } from '../utils/validators.utils';
-import { Notification } from '../models/avenger.model';
+import { UserNotification } from '../models/avenger.model';
 import { CommonSocketEventsHandler } from '../services/common.socket-event-handler';
 import { populate_notification_obj } from '../utils/notifications.utils';
 
@@ -26,7 +26,7 @@ export async function create_notification(
     target_id: number;
   }
 ) {
-  const new_notification_model = await Notification.create(<any> params);
+  const new_notification_model = await UserNotification.create(<any> params);
   return new_notification_model;
 }
 
@@ -41,7 +41,7 @@ export async function create_notification_and_send(
     extras_data?: PlainObject,
   }
 ) {
-  return Notification.create(<any> {
+  return UserNotification.create(<any> {
     from_id: params.from_id,
     to_id: params.to_id,
     event: params.event,
@@ -83,7 +83,7 @@ export async function create_notification_and_send(
 }
 
 export async function get_user_unseen_notifications_count(you_id: number, last_seen: string | Date) {
-  const count = await Notification.count({
+  const count = await UserNotification.count({
     where: { to_id: you_id, created_at: { [Op.gt]: last_seen } },
   });
 

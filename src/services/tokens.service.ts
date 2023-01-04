@@ -1,7 +1,7 @@
 import {
   Request,
 } from 'express';
-import { IUser } from '../interfaces/app.interface';
+import { IUser } from '../interfaces/avenger.models.interface';
 import { generateJWT } from '../utils/helpers.utils';
 
 

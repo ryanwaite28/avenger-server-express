@@ -1,12 +1,12 @@
 import { get_user_by_id } from "../repos/users.repo";
-import { INotification } from "../interfaces/app.interface";
+import { IUserNotification } from "../interfaces/avenger.models.interface";
 import { Model } from "sequelize";
 
 
 export const populate_notification_obj = async (notification_model: Model) => {
   console.log(`populate_deliverme_notification_obj attempt ==========`);
 
-  const notificationObj = notification_model.toJSON() as INotification;
+  const notificationObj = notification_model.toJSON() as IUserNotification;
   const user_model = await get_user_by_id(notificationObj.from_id);
   const full_name = user_model.displayname;
   let message = "";

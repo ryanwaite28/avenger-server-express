@@ -1,10 +1,24 @@
 import { UploadedFile } from "express-fileupload";
+import {
+  isEmail,
+  isPhoneNumber,
+  isStrongPassword,
+  isURL
+} from "class-validator";
+
+import { DISPLAYNAME_REGEX, USERNAME_REGEX } from "../regex/user.regex";
 import { HttpStatusCode } from "../enums/http-codes.enum";
 import { IModelValidator, PlainObject, ServiceMethodAsyncResults, ServiceMethodResults } from "../interfaces/common.interface";
 import { IStoreImage, store_base64_image, store_image } from "./cloudinary-manager.utils";
 import { allowedImages } from "./constants.utils";
+import { GENERIC_TEXT_REGEX, PERSON_NAME_REGEX } from "../regex/common.regex";
+
+
+
 
 export function validatePassword(password: string) {
+  // return isStrongPassword(password);
+
   if (!password) { return false; }
   if (password.constructor !== String) { return false; }
 
@@ -17,69 +31,59 @@ export function validatePassword(password: string) {
   return (
     hasMoreThanSixCharacters
     && (hasUpperCase || hasLowerCase)
-    // && hasNumbers
+    && hasNumbers
   );
 }
 
 export function validateEmail(email: string) {
   if (!email) { return false; }
   if (email.constructor !== String) { return false; }
-  const re = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
-  return re.test(email.toLowerCase());
+  return isEmail(email.toLowerCase());
 }
 
 export function validatePhone(phone?: string) {
   // https://stackoverflow.com/questions/4338267/validate-phone-number-with-javascript
   if (!phone) { return false; }
   if (typeof(phone) !== 'string') { return false; }
-  const re = /^[\d]+$/;
-  return re.test(phone.toLowerCase()) && (phone.length === 10 || phone.length === 11);
+  return isPhoneNumber(phone.toLowerCase()) && (phone.length === 10 || phone.length === 11);
 }
 
 export function validateUsername(value: string): boolean {
   if (!value) { return false; }
   if (value.constructor !== String) { return false; }
-  const re = /^[a-zA-Z0-9\-\_\.]{2,50}$/;
-  return re.test(value.toLowerCase());
+  return USERNAME_REGEX.test(value.toLowerCase());
 }
 
 export function validateDisplayname(value: any): boolean {
   if (!value) { return false; }
   if (typeof (value) !== 'string') { return false; }
-  return value.length > 1;
+  return DISPLAYNAME_REGEX.test(value);
 }
 
 export function validateURL(value: any): boolean {
   if (!value) { return false; }
   if (value.constructor !== String) { return false; }
-  const re = /[-a-zA-Z0-9@:%_\+.~#?&//=]{2,256}\.[a-z]{2,4}\b(\/[-a-zA-Z0-9@:%_\+.~#?&//=]*)?/gi;
-  return re.test(value.toLowerCase());
+  return isURL(value.toLowerCase());
 }
 
 export function validatePersonName(value: any): boolean {
   if (!value) { return false; }
   if (value.constructor !== String) { return false; }
-  const re = /^[a-zA-Z\s\'\-\_\.]{2,50}$/;
-  return re.test(value.toLowerCase());
+  return PERSON_NAME_REGEX.test(value.toLowerCase());
 }
 
 export function validateName(arg: string) {
   if (!arg) { return false; }
   if (arg.constructor !== String || typeof(arg) !== 'string') { return false; }
-  const re = /^[a-zA-Z\'\-']{2,100}$/;
-  const results = re.test(arg.toLowerCase());
+  const results = PERSON_NAME_REGEX.test(arg.toLowerCase());
   return results;
 }
 
 
 
 
-export const optionalValidatorCheck = (arg: any, fn: (arg: any) => boolean) => !arg || fn(arg);
-export const requiredValidatorCheck = (arg: any, fn: (arg: any) => boolean) => !!arg && fn(arg);
 
-
-
-export const genericTextValidator = (arg: any) => !!arg && typeof(arg) === 'string' && (/^[a-zA-Z0-9\s\'\-\_\.\@\$\#]{1,250}/).test(arg);
+export const genericTextValidator = (arg: any) => !!arg && typeof(arg) === 'string' && GENERIC_TEXT_REGEX.test(arg);
 export const genericTextValidatorOptional = (arg: any) => !arg || genericTextValidator(arg);
 export const phoneValidator = (arg: any) => (/^[0-9]{10,15}$/).test(arg);
 export const stringValidator = (arg: any) => typeof(arg) === 'string';
@@ -88,11 +92,14 @@ export const booleanValidator = (arg: any) => typeof(arg) === 'boolean';
 export const dateObjValidator = (arg: any) => typeof(arg) === 'object' && arg.constructor === Date;
 export const notNullValidator = (arg: any) => arg !== null;
 
+export const optionalValidatorCheck = (arg: any, fn: (arg: any) => boolean) => !arg || fn(arg);
+export const requiredValidatorCheck = (arg: any, fn: (arg: any) => boolean) => !!arg && fn(arg);
 
 
 export const optional_textValidator = (arg: any) => {
   console.log({ arg });
-  return optionalValidatorCheck(arg, genericTextValidator);
+  const results = optionalValidatorCheck(arg, genericTextValidator);
+  return results;
 };
 export const required_textValidator = (arg: any) => requiredValidatorCheck(arg, genericTextValidator);
 

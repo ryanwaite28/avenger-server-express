@@ -1,22 +1,23 @@
 import { Request } from 'express';
+import Stripe from 'stripe';
+import { Expo } from 'expo-server-sdk';
 import { UploadedFile } from 'express-fileupload';
-import * as bcrypt from 'bcrypt-nodejs';
+import {
+  hashSync,
+  compareSync
+} from 'bcrypt-nodejs';
 import {
   fn,
   Op,
   col,
   cast
 } from 'sequelize';
-import * as UserRepo from '../repos/users.repo';
-import * as EmailVerfRepo from '../repos/email-verification.repo';
-import * as PhoneVerfRepo from '../repos/phone-verification.repo';
+
 import { TokensService } from './tokens.service';
 import { AuthorizeJWT, uniqueValue } from '../utils/helpers.utils';
-import { IUser, IUserSubscriptionInfo } from '../interfaces/app.interface';
-import { get_user_unseen_notifications_count } from '../repos/notifications.repo';
-import { ExpoPushNotificationsService } from './expo-notifications.service';
+import { IUser, IUserSubscriptionInfo } from '../interfaces/avenger.models.interface';
+import { ExpoPushUserNotificationsService } from './expo-notifications.service';
 import { StripeService } from './stripe.service';
-import Stripe from 'stripe';
 import { isProd } from '../utils/constants.utils';
 import { validateAndUploadImageFile, validateEmail, validatePassword } from '../utils/validators.utils';
 import { API_KEY_SUBSCRIPTION_PLAN } from '../enums/common.enum';
@@ -26,8 +27,27 @@ import { delete_cloudinary_image } from '../utils/cloudinary-manager.utils';
 import { send_email } from '../utils/email-client.utils';
 import { send_verify_sms_request, cancel_verify_sms_request, check_verify_sms_request } from '../utils/sms-client.utils';
 import { SignedUp_EMAIL, PasswordReset_EMAIL, PasswordResetSuccess_EMAIL, VerifyEmail_EMAIL } from '../utils/template-engine.utils';
+import { UserResetPasswordRequest, SiteFeedback, User } from '../models/avenger.model';
 import { UserSignUpDto } from '../dto/user.dto';
-import { ResetPasswordRequest, SiteFeedback, User } from '../models/avenger.model';
+import {
+  create_user,
+  create_user_api_key,
+  get_random_users,
+  get_user_api_key, 
+  get_user_by_email, 
+  get_user_by_id, 
+  get_user_by_phone, 
+  get_user_by_stripe_customer_account_id, 
+  get_user_by_uuid, 
+  get_user_expo_devices, 
+  get_user_expo_device_by_token, 
+  register_expo_device_and_push_token, 
+  remove_expo_device_from_user, 
+  update_user
+} from '../repos/users.repo';
+import {
+  create_email_verification, query_email_verification, update_email_verification
+} from '../repos/email-verification.repo';
 
 
 
@@ -38,6 +58,214 @@ export class UsersService {
 
   /** Request Handlers */
 
+  static async sign_up(data: UserSignUpDto, request_origin: string): ServiceMethodAsyncResults {
+    const check_email = await get_user_by_email(data.email);
+    if (check_email) {
+      const serviceMethodResults: ServiceMethodResults = {
+        status: HttpStatusCode.BAD_REQUEST,
+        error: true,
+        info: {
+          message: 'Email already in use'
+        }
+      };
+      return serviceMethodResults;
+    }
+
+    const check_username = await get_user_by_email(data.username);
+    if (check_username) {
+      const serviceMethodResults: ServiceMethodResults = {
+        status: HttpStatusCode.BAD_REQUEST,
+        error: true,
+        info: {
+          message: 'Username already in use'
+        }
+      };
+      return serviceMethodResults;
+    }
+  
+    /* Data Is Valid */
+  
+    const createInfo = {
+      username: (data.username || uniqueValue()).toLowerCase(),
+      displayname: data.displayname,
+      email: data.email.toLowerCase(),
+      password: hashSync(data.password),
+    };
+    console.log({ createInfo });
+    let new_user_model: IUser | null = await create_user(createInfo);
+    let new_user = new_user_model!;
+    delete new_user.password;
+
+    // create stripe customer account       stripe_customer_account_id
+    const customer = await StripeService.stripe.customers.create({
+      name: data.displayname,
+      description: `Avenger Customer: ${data.displayname}`,
+      email: new_user.email,
+      metadata: {
+        user_id: new_user.id,
+      }
+    });
+
+    const updateUserResults = await update_user({ stripe_customer_account_id: customer.id }, { id: new_user.id });
+    new_user_model = await get_user_by_id(new_user.id);
+    new_user = new_user_model!;
+  
+    try {
+      /** Email Sign up and verify */
+      const new_email_verf_model = await create_email_verification({
+        user_id: new_user.id,
+        email: new_user.email
+      });
+      const new_email_verf: PlainObject = new_email_verf_model.get({ plain: true });
+
+      const verify_link = (<string> request_origin).endsWith('/')
+        ? (request_origin + 'verify-email/' + new_email_verf.verification_code)
+        : (request_origin + '/verify-email/' + new_email_verf.verification_code);
+      const email_subject = `${process.env.APP_NAME} - Signed Up!`;
+      const userName = `${new_user.displayname}`;
+      const email_html = SignedUp_EMAIL({
+        ...new_user,
+        name: userName,
+        verify_link,
+        appName: process.env.APP_NAME
+      });
+
+      // don't "await" for email response.
+      const send_email_params = {
+        to: new_user.email,
+        name: userName,
+        subject: email_subject,
+        html: email_html
+      };
+      send_email(send_email_params)
+        .then((email_results) => {
+          console.log(`sign up email sent successfully to:`, data.email);
+        })
+        .catch((error) => {
+          console.log({ email_error: error });
+        });
+    } catch (e) {
+      console.log(`could not sent sign up email:`, e, { new_user });
+    }
+
+    // create JWT
+    const jwt = TokensService.newUserJwtToken(new_user);
+
+    const serviceMethodResults: ServiceMethodResults = {
+      status: HttpStatusCode.OK,
+      error: false,
+      info: {
+        message: 'Signed Up!',
+        data: {
+          online: true,
+          you: new_user,
+          token: jwt,
+        }
+      }
+    };
+    return serviceMethodResults;
+  }
+
+  static async sign_in(username_email: string, password: string): ServiceMethodAsyncResults {
+    try {
+      if (username_email) { username_email = username_email.toLowerCase(); }
+      if (!username_email) {
+        const serviceMethodResults: ServiceMethodResults = {
+          status: HttpStatusCode.BAD_REQUEST,
+          error: true,
+          info: {
+            message: 'Email Address/Username field is required'
+          }
+        };
+        return serviceMethodResults;
+      }
+
+      if (!password) {
+        const serviceMethodResults: ServiceMethodResults = {
+          status: HttpStatusCode.BAD_REQUEST,
+          error: true,
+          info: {
+            message: 'Password field is required'
+          }
+        };
+        return serviceMethodResults;
+      }
+
+      const check_account_model = await User.findOne({
+        where: {
+          [Op.or]: [
+            { email: username_email },
+            { username: username_email }
+          ]
+        }
+      });
+      if (!check_account_model) {
+        const serviceMethodResults: ServiceMethodResults = {
+          status: HttpStatusCode.UNAUTHORIZED,
+          error: true,
+          info: {
+            message: 'Invalid credentials.'
+          }
+        };
+        return serviceMethodResults;
+      }
+      try {
+        const checkPassword = <string> check_account_model.get('password');
+        const badPassword = compareSync(password, checkPassword!) === false;
+        if (badPassword) {
+          const serviceMethodResults: ServiceMethodResults = {
+            status: HttpStatusCode.UNAUTHORIZED,
+            error: true,
+            info: {
+              message: 'Invalid credentials.'
+            }
+          };
+          return serviceMethodResults;
+        }
+      } catch (e) {
+        const serviceMethodResults: ServiceMethodResults = {
+          status: HttpStatusCode.INTERNAL_SERVER_ERROR,
+          error: true,
+          info: {
+            message: `could not process authentication/credentials, something went wrong...`,
+            error: e,
+          }
+        };
+        return serviceMethodResults;
+      }
+
+      const you = <IUser> check_account_model.get({ plain: true });
+      delete you.password;
+      
+      // create JWT
+      const jwt = TokensService.newUserJwtToken(you);
+
+      const serviceMethodResults: ServiceMethodResults = {
+        status: HttpStatusCode.OK,
+        error: false,
+        info: {
+          message: 'Signed In!',
+          data: {
+            online: true,
+            you: you,
+            token: jwt,
+          }
+        }
+      };
+      return serviceMethodResults;
+    } catch (e) {
+      const serviceMethodResults: ServiceMethodResults = {
+        status: HttpStatusCode.INTERNAL_SERVER_ERROR,
+        error: true,
+        info: {
+          message: `could not sign in, something went wrong...`,
+          error: e,
+        }
+      };
+      return serviceMethodResults;
+    }
+  }
+
   static async check_session(request: Request): ServiceMethodAsyncResults {
     try {
       const auth = AuthorizeJWT(request, false);
@@ -47,7 +275,7 @@ export class UsersService {
       console.log({ auth });
 
       if (!!auth.you) {
-        const you_model: IUser = await UserRepo.get_user_by_id(auth.you.id);
+        const you_model: IUser = await get_user_by_id(auth.you.id);
         console.log({ you_model });
         auth.you = you_model;
         // jwt = TokensService.newUserJwtToken(auth.you);
@@ -70,8 +298,8 @@ export class UsersService {
             }
           });
 
-          const updateUserResults = await UserRepo.update_user({ stripe_customer_account_id: customer.id }, { id: auth.you.id });
-          let new_user_model = await UserRepo.get_user_by_id(auth.you.id);
+          const updateUserResults = await update_user({ stripe_customer_account_id: customer.id }, { id: auth.you.id });
+          let new_user_model = await get_user_by_id(auth.you.id);
           let new_user = new_user_model!;
           auth.you = new_user;
 
@@ -113,7 +341,7 @@ export class UsersService {
   }
 
   static async get_user_by_id(user_id: number): ServiceMethodAsyncResults {
-    const user: IUser | null = await UserRepo.get_user_by_id(user_id);
+    const user: IUser | null = await get_user_by_id(user_id);
     
     const serviceMethodResults: ServiceMethodResults = {
       status: HttpStatusCode.OK,
@@ -126,7 +354,7 @@ export class UsersService {
   }
 
   static async get_user_by_phone(phone: string): ServiceMethodAsyncResults {
-    const user: IUser | null = await UserRepo.get_user_by_phone(phone);
+    const user: IUser | null = await get_user_by_phone(phone);
 
     const serviceMethodResults: ServiceMethodResults = {
       status: HttpStatusCode.OK,
@@ -268,10 +496,10 @@ export class UsersService {
   }
 
   static async get_user_api_key(user: IUser): ServiceMethodAsyncResults {
-    let api_key = await UserRepo.get_user_api_key(user.id);
+    let api_key = await get_user_api_key(user.id);
 
     if (!api_key) {
-      api_key = await UserRepo.create_user_api_key({
+      api_key = await create_user_api_key({
         user_id: user.id,
         firstname: user.firstname,
         middlename: user.middlename,
@@ -310,7 +538,7 @@ export class UsersService {
   
   static async add_card_payment_method_to_user_customer(stripe_customer_account_id: string, payment_method_id: string): ServiceMethodAsyncResults {
     let payment_method: Stripe.Response<Stripe.PaymentMethod>;
-    const user = await UserRepo.get_user_by_stripe_customer_account_id(stripe_customer_account_id);
+    const user = await get_user_by_stripe_customer_account_id(stripe_customer_account_id);
     if (!user) {
       const serviceMethodResults: ServiceMethodResults = {
         status: HttpStatusCode.BAD_REQUEST,
@@ -453,7 +681,7 @@ export class UsersService {
   }
 
   static async create_user_api_key(user: IUser): ServiceMethodAsyncResults {
-    const api_key = await UserRepo.get_user_api_key(user.id);
+    const api_key = await get_user_api_key(user.id);
     if (api_key) {
       const serviceMethodResults: ServiceMethodResults = {
         status: HttpStatusCode.BAD_REQUEST,
@@ -466,7 +694,7 @@ export class UsersService {
       return serviceMethodResults;
     }
 
-    const new_api_key = await UserRepo.create_user_api_key({
+    const new_api_key = await create_user_api_key({
       user_id:             user.id,
       firstname:           user.firstname,
       middlename:          user.middlename,
@@ -493,7 +721,7 @@ export class UsersService {
     const useLimit: number = limitIsValid
       ? parseInt(limit, 10)
       : 10;
-    const users: IUser[] = await UserRepo.get_random_users(useLimit);
+    const users: IUser[] = await get_random_users(useLimit);
     
     const serviceMethodResults: ServiceMethodResults = {
       status: HttpStatusCode.OK,
@@ -503,214 +731,6 @@ export class UsersService {
       }
     };
     return serviceMethodResults;
-  }
-
-  static async sign_up(data: UserSignUpDto, request_origin: string): ServiceMethodAsyncResults {
-    const check_email = await UserRepo.get_user_by_email(data.email);
-    if (check_email) {
-      const serviceMethodResults: ServiceMethodResults = {
-        status: HttpStatusCode.BAD_REQUEST,
-        error: true,
-        info: {
-          message: 'Email already in use'
-        }
-      };
-      return serviceMethodResults;
-    }
-
-    const check_username = await UserRepo.get_user_by_email(data.username);
-    if (check_username) {
-      const serviceMethodResults: ServiceMethodResults = {
-        status: HttpStatusCode.BAD_REQUEST,
-        error: true,
-        info: {
-          message: 'Username already in use'
-        }
-      };
-      return serviceMethodResults;
-    }
-  
-    /* Data Is Valid */
-  
-    const createInfo = {
-      username: (data.username || uniqueValue()).toLowerCase(),
-      displayname: data.displayname,
-      email: data.email.toLowerCase(),
-      password: bcrypt.hashSync(data.password),
-    };
-    console.log({ createInfo });
-    let new_user_model: IUser | null = await UserRepo.create_user(createInfo);
-    let new_user = new_user_model!;
-    delete new_user.password;
-
-    // create stripe customer account       stripe_customer_account_id
-    const customer = await StripeService.stripe.customers.create({
-      name: data.displayname,
-      description: `Avenger Customer: ${data.displayname}`,
-      email: new_user.email,
-      metadata: {
-        user_id: new_user.id,
-      }
-    });
-
-    const updateUserResults = await UserRepo.update_user({ stripe_customer_account_id: customer.id }, { id: new_user.id });
-    new_user_model = await UserRepo.get_user_by_id(new_user.id);
-    new_user = new_user_model!;
-  
-    try {
-      /** Email Sign up and verify */
-      const new_email_verf_model = await EmailVerfRepo.create_email_verification({
-        user_id: new_user.id,
-        email: new_user.email
-      });
-      const new_email_verf: PlainObject = new_email_verf_model.get({ plain: true });
-
-      const verify_link = (<string> request_origin).endsWith('/')
-        ? (request_origin + 'verify-email/' + new_email_verf.verification_code)
-        : (request_origin + '/verify-email/' + new_email_verf.verification_code);
-      const email_subject = `${process.env.APP_NAME} - Signed Up!`;
-      const userName = `${new_user.displayname}`;
-      const email_html = SignedUp_EMAIL({
-        ...new_user,
-        name: userName,
-        verify_link,
-        appName: process.env.APP_NAME
-      });
-
-      // don't "await" for email response.
-      const send_email_params = {
-        to: new_user.email,
-        name: userName,
-        subject: email_subject,
-        html: email_html
-      };
-      send_email(send_email_params)
-        .then((email_results) => {
-          console.log(`sign up email sent successfully to:`, data.email);
-        })
-        .catch((error) => {
-          console.log({ email_error: error });
-        });
-    } catch (e) {
-      console.log(`could not sent sign up email:`, e, { new_user });
-    }
-
-    // create JWT
-    const jwt = TokensService.newUserJwtToken(new_user);
-
-    const serviceMethodResults: ServiceMethodResults = {
-      status: HttpStatusCode.OK,
-      error: false,
-      info: {
-        message: 'Signed Up!',
-        data: {
-          online: true,
-          you: new_user,
-          token: jwt,
-        }
-      }
-    };
-    return serviceMethodResults;
-  }
-
-  static async sign_in(username_email: string, password: string): ServiceMethodAsyncResults {
-    try {
-      if (username_email) { username_email = username_email.toLowerCase(); }
-      if (!username_email) {
-        const serviceMethodResults: ServiceMethodResults = {
-          status: HttpStatusCode.BAD_REQUEST,
-          error: true,
-          info: {
-            message: 'Email Address/Username field is required'
-          }
-        };
-        return serviceMethodResults;
-      }
-
-      if (!password) {
-        const serviceMethodResults: ServiceMethodResults = {
-          status: HttpStatusCode.BAD_REQUEST,
-          error: true,
-          info: {
-            message: 'Password field is required'
-          }
-        };
-        return serviceMethodResults;
-      }
-
-      const check_account_model = await User.findOne({
-        where: {
-          [Op.or]: [
-            { email: username_email },
-            { username: username_email }
-          ]
-        }
-      });
-      if (!check_account_model) {
-        const serviceMethodResults: ServiceMethodResults = {
-          status: HttpStatusCode.UNAUTHORIZED,
-          error: true,
-          info: {
-            message: 'Invalid credentials.'
-          }
-        };
-        return serviceMethodResults;
-      }
-      try {
-        const checkPassword = <string> check_account_model.get('password');
-        const badPassword = bcrypt.compareSync(password, checkPassword!) === false;
-        if (badPassword) {
-          const serviceMethodResults: ServiceMethodResults = {
-            status: HttpStatusCode.UNAUTHORIZED,
-            error: true,
-            info: {
-              message: 'Invalid credentials.'
-            }
-          };
-          return serviceMethodResults;
-        }
-      } catch (e) {
-        const serviceMethodResults: ServiceMethodResults = {
-          status: HttpStatusCode.INTERNAL_SERVER_ERROR,
-          error: true,
-          info: {
-            message: `could not process authentication/credentials, something went wrong...`,
-            error: e,
-          }
-        };
-        return serviceMethodResults;
-      }
-
-      const you = <IUser> check_account_model.get({ plain: true });
-      delete you.password;
-      
-      // create JWT
-      const jwt = TokensService.newUserJwtToken(you);
-
-      const serviceMethodResults: ServiceMethodResults = {
-        status: HttpStatusCode.OK,
-        error: false,
-        info: {
-          message: 'Signed In!',
-          data: {
-            online: true,
-            you: you,
-            token: jwt,
-          }
-        }
-      };
-      return serviceMethodResults;
-    } catch (e) {
-      const serviceMethodResults: ServiceMethodResults = {
-        status: HttpStatusCode.INTERNAL_SERVER_ERROR,
-        error: true,
-        info: {
-          message: `could not sign in, something went wrong...`,
-          error: e,
-        }
-      };
-      return serviceMethodResults;
-    }
   }
 
   static async send_sms_verification(you: IUser, phone: string): ServiceMethodAsyncResults {
@@ -727,8 +747,8 @@ export class UsersService {
       }
 
       if (phone.toLowerCase() === 'x') {
-        const updates = await UserRepo.update_user({ phone: null }, { id: you.id });
-        const newYouModel = await UserRepo.get_user_by_id(you.id);
+        const updates = await update_user({ phone: null }, { id: you.id });
+        const newYouModel = await get_user_by_id(you.id);
         const newYou = newYouModel!;
         delete newYou.password;
 
@@ -764,7 +784,7 @@ export class UsersService {
       }
 
       // check if there is abother user with phone number
-      const check_phone = await UserRepo.get_user_by_phone(phone);
+      const check_phone = await get_user_by_phone(phone);
       if (check_phone) {
         const serviceMethodResults: ServiceMethodResults = {
           status: HttpStatusCode.FORBIDDEN,
@@ -795,7 +815,7 @@ export class UsersService {
 
           sms_results = await send_verify_sms_request(phone);
 
-          const updates = await UserRepo.update_user({ phone }, { id: you.id });
+          const updates = await update_user({ phone }, { id: you.id });
           const serviceMethodResults: ServiceMethodResults = {
             status: HttpStatusCode.OK,
             error: false,
@@ -829,7 +849,7 @@ export class UsersService {
         // (<IRequest> request).session.sms_verification = sms_results;
         // (<IRequest> request).session.sms_phone = phone;
 
-        const updates = await UserRepo.update_user({ temp_phone: phone }, { id: you.id });
+        const updates = await update_user({ temp_phone: phone }, { id: you.id });
         const serviceMethodResults: ServiceMethodResults = {
           status: HttpStatusCode.OK,
           error: false,
@@ -921,8 +941,8 @@ export class UsersService {
         return serviceMethodResults;
       }
 
-      const updates = await UserRepo.update_user({ phone: you.temp_phone, temp_phone: ``, phone_verified: true }, { id: you.id });
-      const newYouModel = await UserRepo.get_user_by_id(you.id);
+      const updates = await update_user({ phone: you.temp_phone, temp_phone: ``, phone_verified: true }, { id: you.id });
+      const newYouModel = await get_user_by_id(you.id);
       const newYou = newYouModel!;
       delete newYou.password;
 
@@ -968,7 +988,7 @@ export class UsersService {
       return serviceMethodResults;
     }
     
-    const user_result = await UserRepo.get_user_by_email(email);
+    const user_result = await get_user_by_email(email);
     if (!user_result) {
       const serviceMethodResults: ServiceMethodResults = {
         status: HttpStatusCode.BAD_REQUEST,
@@ -988,7 +1008,7 @@ export class UsersService {
       ? (request_origin + 'modern/password-reset') 
       : (request_origin + '/modern/password-reset');
 
-    let password_request_result = await ResetPasswordRequest.findOne({
+    let password_request_result = await UserResetPasswordRequest.findOne({
       where: {
         user_id: user.id,
         completed: false,
@@ -1023,7 +1043,7 @@ export class UsersService {
     }
 
     // send reset request email
-    const new_reset_request = await ResetPasswordRequest.create({ user_id: user.id });
+    const new_reset_request = await UserResetPasswordRequest.create({ user_id: user.id });
     const unique_value = new_reset_request.get('unique_value');
     const email_data = {
       link,
@@ -1062,7 +1082,7 @@ export class UsersService {
       return serviceMethodResults;
     }
 
-    const request_result = await ResetPasswordRequest.findOne({ where: { unique_value: code } });
+    const request_result = await UserResetPasswordRequest.findOne({ where: { unique_value: code } });
     if (!request_result) {
       const serviceMethodResults: ServiceMethodResults = {
         status: HttpStatusCode.NOT_FOUND,
@@ -1084,7 +1104,7 @@ export class UsersService {
       return serviceMethodResults;
     }
 
-    const user_result = await UserRepo.get_user_by_id(request_result.dataValues.user_id);
+    const user_result = await get_user_by_id(request_result.dataValues.user_id);
     if (!user_result) {
       const serviceMethodResults: ServiceMethodResults = {
         status: HttpStatusCode.BAD_REQUEST,
@@ -1098,14 +1118,14 @@ export class UsersService {
 
     const name = user_result?.displayname;
     const password = uniqueValue();
-    const hash = bcrypt.hashSync(password);
+    const hash = hashSync(password);
     console.log({
       name,
       password,
       hash,
     });
 
-    const update_result = await UserRepo.update_user({ password: hash }, { id: user_result.id });
+    const update_result = await update_user({ password: hash }, { id: user_result.id });
     console.log({
       update_result
     });
@@ -1142,7 +1162,7 @@ export class UsersService {
   }
 
   static async verify_email(verification_code: string): ServiceMethodAsyncResults {
-    const email_verf_model = await EmailVerfRepo.query_email_verification({ verification_code });
+    const email_verf_model = await query_email_verification({ verification_code });
     if (!email_verf_model) {
       const serviceMethodResults: ServiceMethodResults = {
         status: HttpStatusCode.BAD_REQUEST,
@@ -1155,7 +1175,7 @@ export class UsersService {
     }
 
     const email_verf: PlainObject = email_verf_model.get({ plain: true });
-    const user_model = await UserRepo.get_user_by_id(email_verf.user_id);
+    const user_model = await get_user_by_id(email_verf.user_id);
     if (!user_model) {
       const serviceMethodResults: ServiceMethodResults = {
         status: HttpStatusCode.BAD_REQUEST,
@@ -1179,11 +1199,11 @@ export class UsersService {
       return serviceMethodResults;
     }
 
-    const updates = await UserRepo.update_user(
+    const updates = await update_user(
       { email_verified: true },
       { id: email_verf.user_id }
     );
-    const email_verf_updates = await EmailVerfRepo.update_email_verification(
+    const email_verf_updates = await update_email_verification(
       { verified: true },
       { verification_code }
     );
@@ -1250,7 +1270,7 @@ export class UsersService {
     if (email) {
       const emailIsDifferent = you.email !== email;
       if (emailIsDifferent) {
-        const check_email = await UserRepo.get_user_by_email(email);
+        const check_email = await get_user_by_email(email);
         if (check_email) {
           const serviceMethodResults: ServiceMethodResults = {
             status: HttpStatusCode.FORBIDDEN,
@@ -1271,7 +1291,7 @@ export class UsersService {
     if (username) {
       const usernameIsDifferent = you.username !== username;
       if (usernameIsDifferent) {
-        const check_username = await UserRepo.get_user_by_email(username);
+        const check_username = await get_user_by_email(username);
         if (check_username) {
           const serviceMethodResults: ServiceMethodResults = {
             status: HttpStatusCode.FORBIDDEN,
@@ -1289,15 +1309,15 @@ export class UsersService {
       updatesObj.username = '';
     }
 
-    const updates = await UserRepo.update_user(updatesObj, { id: you.id });
-    const newYouModel = await UserRepo.get_user_by_id(you.id);
+    const updates = await update_user(updatesObj, { id: you.id });
+    const newYouModel = await get_user_by_id(you.id);
     const newYou = newYouModel!;
     delete newYou.password;
 
     // check if phone/email changed
 
     if (email_changed) {
-      const new_email_verf_model = await EmailVerfRepo.create_email_verification({
+      const new_email_verf_model = await create_email_verification({
         user_id: newYou.id,
         email: newYou.email
       });
@@ -1397,8 +1417,8 @@ export class UsersService {
         return serviceMethodResults;
       }
 
-      const updates = await UserRepo.update_user({ phone }, { id: you.id });
-      const newYouModel = await UserRepo.get_user_by_id(you.id);
+      const updates = await update_user({ phone }, { id: you.id });
+      const newYouModel = await get_user_by_id(you.id);
       const newYou = newYouModel!;
       delete newYou.password;
 
@@ -1479,7 +1499,7 @@ export class UsersService {
         };
         return serviceMethodResults;
       }
-      // const checkOldPassword = bcrypt.compareSync(oldPassword, youModel!.get('password'));
+      // const checkOldPassword = compareSync(oldPassword, youModel!.get('password'));
       // const currentPasswordIsBad = checkOldPassword === false;
       // if (currentPasswordIsBad) {
       //   return response.status(HttpStatusCode.UNAUTHORIZED).json({
@@ -1488,9 +1508,9 @@ export class UsersService {
       //   });
       // }
   
-      const hash = bcrypt.hashSync(password);
+      const hash = hashSync(password);
       const updatesObj = { password: hash };
-      const updates = await UserRepo.update_user(updatesObj, { id: you.id });
+      const updates = await update_user(updatesObj, { id: you.id });
       Object.assign(you, updatesObj);
 
       const jwt = TokensService.newUserJwtToken(you);
@@ -1548,7 +1568,7 @@ export class UsersService {
         }
 
         const whereClause = { id: you.id };
-        const updates = await UserRepo.update_user(updatesObj, whereClause);
+        const updates = await update_user(updatesObj, whereClause);
         delete_cloudinary_image(you.icon_id);
     
         Object.assign(you, updatesObj);
@@ -1581,7 +1601,7 @@ export class UsersService {
         return imageValidation;
       }
   
-      const updates = await UserRepo.update_user(updatesObj, { id: you.id });
+      const updates = await update_user(updatesObj, { id: you.id });
   
       const user = { ...you, ...updatesObj };
       // console.log({ updates, results, user });
@@ -1640,7 +1660,7 @@ export class UsersService {
         }
 
         const whereClause = { id: you.id };
-        const updates = await UserRepo.update_user(updatesObj, whereClause);
+        const updates = await update_user(updatesObj, whereClause);
         delete_cloudinary_image(you.wallpaper_id);
     
         Object.assign(you, updatesObj);
@@ -1674,7 +1694,7 @@ export class UsersService {
       }
       
       const whereClause = { id: you.id };
-      const updates = await UserRepo.update_user(updatesObj, whereClause);
+      const updates = await update_user(updatesObj, whereClause);
   
       Object.assign(you, updatesObj);
       const user = { ...you };
@@ -1713,7 +1733,7 @@ export class UsersService {
     user_id: number,
     message: string,
   }) {
-    const user_expo_devices = await UserRepo.get_user_expo_devices(params.user_id);
+    const user_expo_devices = await get_user_expo_devices(params.user_id);
 
     let sent_count: number = 0;
     for (const expo_device of user_expo_devices) {
@@ -1735,7 +1755,10 @@ export class UsersService {
   }
 
   static async register_expo_device_and_push_token(you_id: number, data: PlainObject) {
-    if (!data.expo_token) {
+    const expo_token: string = data.expo_token;
+    const device_info: PlainObject = data.device_info;
+
+    if (!expo_token) {
       const serviceMethodResults: ServiceMethodResults = {
         status: HttpStatusCode.BAD_REQUEST,
         error: true,
@@ -1746,7 +1769,7 @@ export class UsersService {
       return serviceMethodResults;
     }
 
-    const check_registered = await UserRepo.get_user_expo_device_by_token(data.expo_token, );
+    const check_registered = await get_user_expo_device_by_token(expo_token);
     if (check_registered) {
       if (check_registered.user_id === you_id) {
         // device already registered to user
@@ -1764,16 +1787,26 @@ export class UsersService {
       }
       else {
         // token registered to another user; delete previous user and assign to this user
-        await UserRepo.remove_expo_device_from_user(data.expo_token);
+        await remove_expo_device_from_user(data.expo_token);
       }
     }
 
-    const new_push_token_registration = await UserRepo.register_expo_device_and_push_token(
-      you_id,
-      data.expo_token,
-      data.device_info
-    );
+    if (!Expo.isExpoPushToken(expo_token)) {
+      const serviceMethodResults: ServiceMethodResults = {
+        status: HttpStatusCode.BAD_REQUEST,
+        error: true,
+        info: {
+          message: `Push token ${expo_token} is not a valid Expo push token;`,
+          data: {
+            registered: true,
+          }
+        }
+      };
+      return serviceMethodResults;
+    }
 
+    const createParams = { user_id: you_id, token: expo_token, device_info }
+    const new_push_token_registration = await register_expo_device_and_push_token(createParams);
     const serviceMethodResults: ServiceMethodResults = {
       status: HttpStatusCode.OK,
       error: false,
@@ -1797,7 +1830,7 @@ export class UsersService {
       return serviceMethodResults;
     }
 
-    const check_registered = await UserRepo.get_user_expo_device_by_token(expo_token, );
+    const check_registered = await get_user_expo_device_by_token(expo_token);
     if (!check_registered) {
       const serviceMethodResults: ServiceMethodResults = {
         status: HttpStatusCode.BAD_REQUEST,
@@ -1812,7 +1845,7 @@ export class UsersService {
       return serviceMethodResults;
     }
 
-    const removed = await UserRepo.remove_expo_device_from_user(
+    const removed = await remove_expo_device_from_user(
       expo_token,
     );
 
@@ -1828,7 +1861,7 @@ export class UsersService {
   }
 
   static async create_stripe_account(you_id: number, host: string, refreshUrl?: string, redirectUrl?: string): ServiceMethodAsyncResults {
-    const you_model: IUser | null = await UserRepo.get_user_by_id(you_id);
+    const you_model: IUser | null = await get_user_by_id(you_id);
     if (!you_model) {
       const serviceMethodResults: ServiceMethodResults = {
         status: HttpStatusCode.NOT_FOUND,
@@ -1868,7 +1901,7 @@ export class UsersService {
           transfers: { requested: true },
         }
       });
-      updates = await UserRepo.update_user({ stripe_account_id: account.id }, { id: you.id });
+      updates = await update_user({ stripe_account_id: account.id }, { id: you.id });
     } else {
       account = await StripeService.stripe.accounts.retrieve(you.stripe_account_id);
     }
@@ -1934,15 +1967,15 @@ export class UsersService {
       : `http://modernapps.cf/verify-stripe-account/${you.uuid}`;
 
     if (!results.error) {
-      await UserRepo.update_user({ stripe_account_verified: true }, { id: you.id });
-      const you_updated = await UserRepo.get_user_by_id(you.id);
+      await update_user({ stripe_account_verified: true }, { id: you.id });
+      const you_updated = await get_user_by_id(you.id);
       you = you_updated!;
       // create JWT
       const jwt = TokensService.newUserJwtToken(you);
       (<any> results).token = jwt;
       (<any> results).you = you;
 
-      ExpoPushNotificationsService.sendUserPushNotification({
+      ExpoPushUserNotificationsService.sendUserPushUserNotification({
         user_id: you.id,
         message: `Your stripe account has been verified! If you don't see changes, log out and log back in.`,
       });
@@ -1992,7 +2025,7 @@ export class UsersService {
       return serviceMethodResults;
     }
 
-    const check_you: IUser | null = await UserRepo.get_user_by_uuid(user_uuid);
+    const check_you: IUser | null = await get_user_by_uuid(user_uuid);
     if (!check_you) {
       const serviceMethodResults: ServiceMethodResults = {
         status: HttpStatusCode.BAD_REQUEST,
@@ -2041,15 +2074,15 @@ export class UsersService {
       : `http://modernapps.cf/verify-stripe-account/${you.uuid}`;
 
     if (!results.error) {
-      await UserRepo.update_user({ stripe_account_verified: true }, { id: you.id });
-      const you_updated = await UserRepo.get_user_by_id(you.id);
+      await update_user({ stripe_account_verified: true }, { id: you.id });
+      const you_updated = await get_user_by_id(you.id);
       you = you_updated!;
       // create JWT
       const jwt = TokensService.newUserJwtToken(you);
       (<any> results).token = jwt;
       (<any> results).you = you;
 
-      ExpoPushNotificationsService.sendUserPushNotification({
+      ExpoPushUserNotificationsService.sendUserPushUserNotification({
         user_id: you.id,
         message: `Your stripe account has been verified! If you don't see changes, log out and log back in.`,
       });
@@ -2199,7 +2232,7 @@ export class UsersService {
       return serviceMethodResults;
     }
 
-    const updates = await UserRepo.update_user({ platform_subscription_id: new_subscription.id }, { id: you.id });
+    const updates = await update_user({ platform_subscription_id: new_subscription.id }, { id: you.id });
   
     const newUYou = { ...you, platform_subscription_id: new_subscription.id };
     // console.log({ updates, results, user });

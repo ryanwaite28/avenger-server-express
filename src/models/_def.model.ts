@@ -1,13 +1,14 @@
-import { Sequelize, SyncOptions } from 'sequelize';
+import * as Sequelize from 'Sequelize';
+import { v1 as uuidv1 } from 'uuid';
 
-let sequelize: Sequelize;
+let sequelize: Sequelize.Sequelize;
 let db_env: string;
 
 if (process.env.DATABASE_URL) {
   try {
     console.log(`process.env.DATABASE_URL:`, process.env.DATABASE_URL);
     db_env = 'Production PostgreSQL';
-    sequelize = new Sequelize(process.env.DATABASE_URL, {
+    sequelize = new Sequelize.Sequelize(process.env.DATABASE_URL, {
       logging: false,
       dialect: 'postgres',
       dialectOptions: {
@@ -27,7 +28,7 @@ if (process.env.DATABASE_URL) {
   try {
     console.log(`process.env.DATABASE_URL_DEV:`, process.env.DATABASE_URL_DEV);
     db_env = 'Development PostgreSQL';
-    sequelize = new Sequelize(<string> process.env.DATABASE_URL_DEV, {
+    sequelize = new Sequelize.Sequelize(<string> process.env.DATABASE_URL_DEV, {
       dialect: 'postgres',
       dialectOptions: {
         ssl: false,
@@ -40,7 +41,7 @@ if (process.env.DATABASE_URL) {
     console.log(`error connecting to dev postgresql database; using local sqlite...`);
     
     db_env = 'Development (sqlite)';
-    sequelize = new Sequelize('database', 'username', 'password', {
+    sequelize = new Sequelize.Sequelize('database', 'username', 'password', {
       dialect: 'sqlite',
       storage: 'database.sqlite',
       logging: false
@@ -48,7 +49,7 @@ if (process.env.DATABASE_URL) {
   }
 } else {
   db_env = 'Development (sqlite)';
-  sequelize = new Sequelize('database', 'username', 'password', {
+  sequelize = new Sequelize.Sequelize('database', 'username', 'password', {
     dialect: 'sqlite',
     storage: 'database.sqlite',
     logging: false
@@ -58,7 +59,7 @@ if (process.env.DATABASE_URL) {
 export const sequelizeInst = sequelize;
 export const DB_ENV = db_env;
 
-export const common_options = {
+export const common_model_options = {
   sequelize: sequelizeInst,
   paranoid: true,
   timestamps: true,
@@ -69,16 +70,20 @@ export const common_options = {
   deletedAt: 'deleted_at',
 };
 
+export const common_model_fields = {
+  id:           { type: Sequelize.INTEGER, primaryKey: true, autoIncrement: true },
+  uuid:         { type: Sequelize.STRING, defaultValue: uuidv1 }
+};
+
 
 
 
 /** Init Database */
 
 export const avenger_db_init = async () => {
-
-  const sequelize_db_sync_options: SyncOptions = {
-    force: true,
-    alter: true, 
+  const sequelize_db_sync_options: Sequelize.SyncOptions = {
+    force: false,
+    alter: false, 
   };
   
   console.log({

@@ -1,4 +1,3 @@
-
 import * as dotenv from 'dotenv';
 dotenv.config();
 
@@ -13,39 +12,55 @@ import express_device from 'express-device';
 import express_fileupload from 'express-fileupload';
 import { json, urlencoded, raw } from 'body-parser';
 import * as cookie_parser from 'cookie-parser';
+
 import { SocketsService } from './services/sockets.service';
 import { isProd, WHITELIST_DOMAINS } from './utils/constants.utils';
 import { uniqueValue } from './utils/helpers.utils';
 import { StripeService } from './services/stripe.service';
 import { StripeWebhookEventsRequestHandler } from './services/stripe-webhook-events.service';
-import { AppRouter } from './routers/_app.router';
+import { GatewayRouter } from './routers/_app.router';
 import { avenger_db_init } from './models/_def.model';
-import { installExpressApp } from './utils/template-engine.utils';
+import { installTemplatesExpressApp } from './utils/template-engine.utils';
 import { RequestLoggerMiddleware } from './middlewares/request-logger.middleware';
 
 
 
 
-/** Setup */
+/*
+
+  Setup 
+
+*/
 
 const PORT: string | number = process.env.PORT || 80;
 const app: express.Application = express();
 app.set('trust proxy', true);
 
 
+// install nunjucks templates on app instance
+installTemplatesExpressApp(app);
 
-installExpressApp(app);
 
-app.use(express_fileupload({ safeFileNames: true, preserveExtension: true }));
+
+// utility middlewares
+app.use(express_fileupload({ debug: !isProd, safeFileNames: true, preserveExtension: true }));
 app.use(express_device.capture());
 app.use(cookie_parser.default());
 app.use(json());
 app.use(urlencoded({ extended: false }));
 
 
+
+// request logger/analytics middleware
 app.use(RequestLoggerMiddleware);
 
-const appServer = createServer(app);
+
+
+/** Static file declaration */
+const publicPath = join(__dirname, '../_public');
+const expressStaticPublicPath = express.static(publicPath);
+app.use(expressStaticPublicPath);
+
 
 
 // const peerServer = ExpressPeerServer(appServer, {
@@ -53,13 +68,13 @@ const appServer = createServer(app);
 //   path: '/modern-peer'
 // });
 // app.use('/peerjs', peerServer);
+  
+  
 
-
-
+// setup socket io on app instance
+const appServer = createServer(app);
 const io: io_server = new io_server(appServer, {
-  cors: {
-    origin: WHITELIST_DOMAINS,
-  },
+  cors: { origin: WHITELIST_DOMAINS },
 
   allowRequest: (req, callback) => {
     console.log(`socket req origin: ${req.headers.origin}`);
@@ -78,41 +93,33 @@ SocketsService.handle_io_connections(io);
 
 
 
-/** Mount Sub-Router(s) to Master Application Instance */
-
+// listen to stripe events via web-hook
 app.post('/stripe-webhook', raw({ type: 'application/json' }), async (request: Request, response: Response) => {
   console.log(`-------stripe webhook request:-------`, request.body, request.headers);
-  
   const stripe_signature = request.get('stripe-signature') ?? '';
-  
   let event;
   
   // Verify webhook signature and extract the event.
   // See https://stripe.com/docs/webhooks/signatures for more information.
   try {
     event = StripeService.stripe.webhooks.constructEvent(request.body, stripe_signature, process.env.STRIPE_WEBHOOK_SIG!);
-  } catch (err) {
+  }
+  catch (err) {
     const errMsg = `Webhook Error: ${(<any> err).message}`;
     console.log(errMsg);
     return response.status(400).send(errMsg);
   }
   
   console.log(`stripe webhook event:`, { event });
-  
   return StripeWebhookEventsRequestHandler.handleEvent(event, request, response);
 });
 
 
-app.use('/', AppRouter);
+
+// mount main gateway router to app instance
+app.use(GatewayRouter);
 
 
-
-
-/** Static file declaration */
-
-const publicPath = join(__dirname, '../_public');
-const expressStaticPublicPath = express.static(publicPath);
-app.use(expressStaticPublicPath);
 
 /** init database */
 console.log(`PORT = ${PORT}\n`);

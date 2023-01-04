@@ -1,7 +1,53 @@
+import { IUser } from "../interfaces/avenger.models.interface";
+import { Model } from 'sequelize';
+import {
+  sign as jwt_sign,
+  verify as jwt_verify
+} from 'jsonwebtoken';
+import {
+  Request,
+} from 'express';
+import { HttpStatusCode } from '../enums/http-codes.enum';
+import { ServiceMethodResults } from '../interfaces/common.interface';
+import { SKILL_NAME_REGEX } from "../regex/skill.regex";
+import { AUTH_BEARER_HEADER_REGEX } from "../regex/common.regex";
+import { v1 as uuidv1, v4 as uuidv4 } from 'uuid';
+
+
+
+export const formatSkillName = (name: string): string => {
+  const newName = name
+    .replace(/[\s]{1,}/, ' ')
+    .trim();
+  console.log({ name, newName });
+  return newName;
+};
+
+export const checkSkillName = (skill_name: string) => {
+  if (!skill_name) {
+    throw new Error(`No arg given...`);
+  }
+
+  const newSkillName: string = formatSkillName(skill_name);
+  console.log(`transforming ${skill_name} to ${newSkillName}`);
+  const invalidSkillName: boolean = !SKILL_NAME_REGEX.test(newSkillName);
+  if (invalidSkillName) {
+    throw new Error(`${newSkillName} did not pass regex...`);
+  }
+
+  return newSkillName;
+};
+
+
 export function uniqueValue() {
-  return String(Date.now()) +
+  return String(Date.now()) + '_' +
     Math.random().toString(36).substr(2, 34) +
     Math.random().toString(36).substr(2, 34);
+}
+
+export function uniqueApiKey () {
+  const value = `${uuidv1()}_${uuidv4()}`;
+  return 
 }
 
 export function capitalize(str: string) {
@@ -35,26 +81,6 @@ export function getRandomItem(array: any[]) {
   const item = array[randomIndex];
   return item;
 }
-
-
-
-import { IUser } from "../interfaces/app.interface";
-import { Model } from 'sequelize';
-import {
-  sign as jwt_sign,
-  verify as jwt_verify
-} from 'jsonwebtoken';
-import {
-  Request,
-  Response,
-  NextFunction,
-} from 'express';
-import { UploadedFile } from 'express-fileupload';
-import { HttpStatusCode } from '../enums/http-codes.enum';
-import { ServiceMethodResults, IModelValidator, PlainObject, ServiceMethodAsyncResults } from '../interfaces/common.interface';
-import { IStoreImage, store_base64_image, store_image } from "./cloudinary-manager.utils";
-import { allowedImages } from "./constants.utils";
-import { validateName, validateEmail, validatePassword, numberValidator, genericTextValidator } from "./validators.utils";
 
 
 
@@ -101,31 +127,22 @@ export const check_model_args = async (options: {
 };
 
 
-export const VALID_RATINGS = new Set([1, 2, 3, 4, 5]);
-export const create_rating_required_props: IModelValidator[] = [
-  { field: `user_id`, name: `User Id`, validator: (arg: any) => numberValidator(arg) && parseInt(arg) > 0, errorMessage: `is required` },
-  { field: `writer_id`, name: `Writer Id`, validator: (arg: any) => numberValidator(arg) && parseInt(arg) > 0, errorMessage: `is required` },
-  { field: `rating`, name: `Rating`, validator: (arg: any) => numberValidator(arg) && VALID_RATINGS.has(parseInt(arg)), errorMessage: `must be 1-5` },
-  { field: `title`, name: `Title`, validator: genericTextValidator, errorMessage: `must be: at least 3 characters, alphanumeric, dashes, underscores, periods, etc` },
-  { field: `summary`, name: `Summary`, validator: genericTextValidator, errorMessage: `must be: at least 3 characters, alphanumeric, dashes, underscores, periods, etc` },
-];
 
 
 
-
-export const convertModel = <T> (model: Model | Model | null) => {
+export const convertModel = <T> (model: Model | null): T | null => {
   return model ? (<any> model.toJSON()) as T : null;
 }
 
-export const convertModels = <T> (models: (Model | Model)[]) => {
+export const convertModels = <T> (models: Model[]) => {
   return models.map((model) => (<any> model.toJSON()) as T);
 }
 
-export const convertModelCurry = <T> () => (model: Model | Model | null) => {
-  return model ? (<any> model.toJSON()) as T : null;
+export const convertModelCurry = <T> () => (model: Model | null): T | null => {
+  return model ? (model.toJSON()) as T : null;
 }
 
-export const convertModelsCurry = <T> () => (models: (Model | Model)[]) => {
+export const convertModelsCurry = <T> () => (models: Model[]) => {
   return models.map((model) => (<any> model.toJSON()) as T);
 }
 
@@ -172,7 +189,7 @@ export function AuthorizeJWT(
         message: `Request not authorized: missing Authorization header`
       };
     }
-    const isNotBearerFormat = !(/Bearer\s[^]/).test(auth);
+    const isNotBearerFormat = !AUTH_BEARER_HEADER_REGEX.test(auth);
     if (isNotBearerFormat) {
       return {
         error: true,

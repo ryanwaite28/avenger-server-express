@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { UploadedFile } from 'express-fileupload';
-import { IUser } from '../interfaces/app.interface';
+import { IUser } from '../interfaces/avenger.models.interface';
 import { ExpressResponse, ServiceMethodResults, PlainObject } from '../interfaces/common.interface';
 import { UsersService } from '../services/users.service';
 import { ApplyToAllMethods, CatchRequestHandlerError, MethodLogger } from '../decorators/service-method-error-handler.decorator';
@@ -12,18 +12,20 @@ export class UsersRequestHandler {
 
   @CatchRequestHandlerError()
   static async sign_up(request: Request, response: Response): ExpressResponse {
-    const userSignUpDto: UserSignUpDto = response.locals[`validated_data`];
+    const dto: UserSignUpDto = response.locals[`dto`];
+    console.log(`sign_up:`, dto);
     const request_origin = request.get('origin')!;
     
-    const serviceMethodResults: ServiceMethodResults = await UsersService.sign_up(userSignUpDto, request_origin);
+    const serviceMethodResults: ServiceMethodResults = await UsersService.sign_up(dto, request_origin);
     return response.status(serviceMethodResults.status).json(serviceMethodResults.info);
   }
-
+  
   @CatchRequestHandlerError()
   static async sign_in(request: Request, response: Response): ExpressResponse {
-    const userSignInDto: UserSignInDto = response.locals[`validated_data`];
+    const dto: UserSignInDto = response.locals[`dto`];
+    console.log(`sign_in:`, dto);
 
-    const serviceMethodResults: ServiceMethodResults = await UsersService.sign_in(userSignInDto.username_email, userSignInDto.password);
+    const serviceMethodResults: ServiceMethodResults = await UsersService.sign_in(dto.username_email, dto.password);
     return response.status(serviceMethodResults.status).json(serviceMethodResults.info);
   }
 

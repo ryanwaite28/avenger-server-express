@@ -7,6 +7,14 @@ export enum STATUSES {
   RESCINDED = `RESCINDED`,
 }
 
+export enum RATINGS {
+  ONE = 1,
+  TWO,
+  THREE,
+  FOUR,
+  FIVE,
+}
+
 
 
 export const DURATION_1_SECOND = 1000;
