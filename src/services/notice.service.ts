@@ -5,6 +5,6 @@ import { HttpStatusCode } from "../enums/http-codes.enum";
 
 
 
-export class QuestionService {
+export class NoticeService {
   
 }

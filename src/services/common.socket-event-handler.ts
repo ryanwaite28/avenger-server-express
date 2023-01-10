@@ -170,8 +170,10 @@ export class CommonSocketEventsHandler {
   ) {
     const validJwtInData = (
       data.hasOwnProperty('jwt') &&
-      typeof(data.jwt) === 'string'
+      typeof(data.jwt) === 'string' &&
+      !!data.jwt
     );
+    console.log({ socket: socket.id, data, validJwtInData });
     if (!validJwtInData) {
       io.to(socket.id).emit(`${COMMON_SOCKET_EVENT_TYPES.SOCKET_TRACK}-error`, { message: `jwt is required.` });
       return;

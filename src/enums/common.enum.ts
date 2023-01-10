@@ -68,3 +68,10 @@ export enum TRANSACTION_STATUS {
   CANCELED = 'CANCELED',
   DECLINED = 'DECLINED',
 }
+
+export enum REACTIONS {
+  LIKE = 'LIKE',
+  DISLIKE = 'DISLIKE',
+  LOVE = 'LOVE',
+  CONFUSED = 'CONFUSED'
+}

@@ -16,7 +16,7 @@ import { IsSkillExists } from '../validators/skill.validator';
 
 
 
-export class UserSkillCreateDto {
+export class UserSkillAddDto {
   @IsNotEmpty()
   @IsInt()
   @IsSkillExists()

@@ -1,4 +1,4 @@
-import * as Sequelize from 'Sequelize';
+import * as Sequelize from 'sequelize';
 import { v1 as uuidv1 } from 'uuid';
 
 let sequelize: Sequelize.Sequelize;
@@ -11,6 +11,9 @@ if (process.env.DATABASE_URL) {
     sequelize = new Sequelize.Sequelize(process.env.DATABASE_URL, {
       logging: false,
       dialect: 'postgres',
+      query: {
+        raw: false,
+      },
       dialectOptions: {
         ssl: {
           require: true,
@@ -30,6 +33,9 @@ if (process.env.DATABASE_URL) {
     db_env = 'Development PostgreSQL';
     sequelize = new Sequelize.Sequelize(<string> process.env.DATABASE_URL_DEV, {
       dialect: 'postgres',
+      query: {
+        raw: false,
+      },
       dialectOptions: {
         ssl: false,
         rejectUnauthorized: false
@@ -44,7 +50,10 @@ if (process.env.DATABASE_URL) {
     sequelize = new Sequelize.Sequelize('database', 'username', 'password', {
       dialect: 'sqlite',
       storage: 'database.sqlite',
-      logging: false
+      logging: false,
+      query: {
+        raw: false,
+      },
     });
   }
 } else {
@@ -59,8 +68,9 @@ if (process.env.DATABASE_URL) {
 export const sequelizeInst = sequelize;
 export const DB_ENV = db_env;
 
-export const common_model_options = {
+export const common_model_options: Sequelize.InitOptions = {
   sequelize: sequelizeInst,
+
   paranoid: true,
   timestamps: true,
   freezeTableName: true,
@@ -83,7 +93,7 @@ export const common_model_fields = {
 export const avenger_db_init = async () => {
   const sequelize_db_sync_options: Sequelize.SyncOptions = {
     force: false,
-    alter: false, 
+    alter: false,
   };
   
   console.log({

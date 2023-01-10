@@ -100,3 +100,46 @@ export class CreateDto {
 export class UpdateDto {
   
 }
+
+
+
+
+
+
+
+Router\.(get\(|post\(|put\(|delete\()'(.*)', (.*);     -> .     Router.route('$2').$1$3;
+
+
+
+
+@CatchRequestHandlerError()
+  static async __method_name__(request: Request, response: Response): ExpressResponse {
+    const you: IUser = response.locals.you;
+    const some_id: number = parseInt(request.params.some_id, 10);
+    const serviceMethodResults: ServiceMethodResults = await Service.__method_name__();
+    return response.status(serviceMethodResults.status).json(serviceMethodResults.info);
+  }
+
+
+
+static async __method_name__() {
+
+    const serviceMethodResults: ServiceMethodResults = {
+      status: HttpStatusCode.OK,
+      error: false,
+      info: {
+        data,
+      }
+    };
+    return serviceMethodResults;
+  }
+
+
+
+
+const _crud = create_model_crud_repo_from_model_class<I-model>(model);
+
+
+export function __method_name__() {
+  
+}

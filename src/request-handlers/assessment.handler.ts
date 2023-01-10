@@ -3,7 +3,10 @@ import { UploadedFile } from 'express-fileupload';
 import { IUser } from '../interfaces/avenger.models.interface';
 import { ExpressResponse, ServiceMethodResults, PlainObject } from '../interfaces/common.interface';
 import { CatchRequestHandlerError } from '../decorators/service-method-error-handler.decorator';
+import { AssessmentService } from '../services/assessment.service';
 
 
 
-export class AssessmentRequestHandler {}
+export class AssessmentRequestHandler {
+  
+}

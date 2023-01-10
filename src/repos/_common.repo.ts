@@ -11,24 +11,16 @@ import {
   Order
 } from 'sequelize';
 import { convertModel, convertModelCurry, convertModels } from '../utils/helpers.utils';
-import { MyModelStatic, PlainObject } from '../interfaces/common.interface';
+import { IPaginateModelsOptions, IRandomModelsOptions, MyModelStatic, PlainObject } from '../interfaces/common.interface';
 import { IUserUserNotificationLastOpened } from '../interfaces/avenger.models.interface';
 import { UserUserNotificationLastOpened } from '../models/avenger.model';
 
 
 
 
-export async function paginateTable(
-  model: MyModelStatic | any,
-  user_id_field: string,
-  user_id?: number,
-  min_id?: number,
-  include?: Includeable[],
-  attributes?: FindAttributeOptions,
-  group?: GroupOption,
-  whereClause?: WhereOptions,
-  orderBy?: Order
-)  {
+export async function paginateTable(model: MyModelStatic, options: IPaginateModelsOptions)  {
+  const { user_id_field, user_id, min_id, include, attributes, group, whereClause, orderBy } = options;
+
   const useWhereClause: WhereOptions = <PlainObject> (!min_id
     ? { [user_id_field]: user_id }
     : { [user_id_field]: user_id, id: { [Op.lt]: min_id } }
@@ -39,7 +31,7 @@ export async function paginateTable(
 
   console.log(whereClause, { useWhereClause });
 
-  const models = await model.findAll({
+  const models: Model[] = await model.findAll({
     attributes,
     group,
     where: useWhereClause,
@@ -127,16 +119,12 @@ export async function getById<T>(
   return result;
 }
 
-export async function getRandomModels<T>(
-  model: MyModelStatic,
-  limit: number,
-  include?: Includeable[],
-  attributes?: FindAttributeOptions,
-  group?: GroupOption,
-) {
+export async function getRandomModels<T>(model: MyModelStatic, params: IRandomModelsOptions) {
+  const { limit, include, attributes, group } = params;
+
   try {
     const results = await (<any> model).findAll({
-      limit,
+      limit: limit || 10,
       order: [fn( 'RANDOM' )],
       attributes,
       group,

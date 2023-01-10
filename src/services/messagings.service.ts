@@ -69,12 +69,9 @@ export class MessagingsService {
       whereClause.updated_at = { [Op.lt]: messagings_timestamp };
     }
 
-    const messagings_models = await paginateTable(
-      Messaging,
-      '',
-      undefined,
-      undefined,
-      [{
+    const messagings_models = await paginateTable(Messaging, {
+      user_id_field: '',
+      include: [{
         model: User,
         as: 'sender',
         attributes: user_attrs_slim
@@ -83,11 +80,9 @@ export class MessagingsService {
         as: 'user',
         attributes: user_attrs_slim
       }],
-      undefined,
-      undefined,
       whereClause,
-      [['updated_at', 'DESC']]
-    );
+      orderBy: [['updated_at', 'DESC']]
+    });
 
     const newList = [];
     for (const messaging of messagings_models) {

@@ -1,5 +1,5 @@
 import { IUser } from "../interfaces/avenger.models.interface";
-import { Model } from 'sequelize';
+import { CreateOptions, DestroyOptions, FindOptions, Model, UpdateOptions } from 'sequelize';
 import {
   sign as jwt_sign,
   verify as jwt_verify
@@ -8,10 +8,11 @@ import {
   Request,
 } from 'express';
 import { HttpStatusCode } from '../enums/http-codes.enum';
-import { ServiceMethodResults } from '../interfaces/common.interface';
+import { IPaginateModelsOptions, IRandomModelsOptions, MyModelStatic, ServiceMethodResults } from '../interfaces/common.interface';
 import { SKILL_NAME_REGEX } from "../regex/skill.regex";
 import { AUTH_BEARER_HEADER_REGEX } from "../regex/common.regex";
 import { v1 as uuidv1, v4 as uuidv4 } from 'uuid';
+import { getRandomModels, paginateTable } from "../repos/_common.repo";
 
 
 
@@ -130,6 +131,16 @@ export const check_model_args = async (options: {
 
 
 
+export const getSequelizeModelData = <T = any> (model: Model | null): T | null => {
+  return model ? model.dataValues as T : null;
+}
+
+export const getSequelizeModelsData = <T = any> (models: Model[]): T[] => {
+  return models.map((model) => model.dataValues as T);
+}
+
+
+
 export const convertModel = <T> (model: Model | null): T | null => {
   return model ? (<any> model.toJSON()) as T : null;
 }
@@ -244,3 +255,87 @@ export function AuthorizeJWT(
     };
   }
 }
+
+
+
+export const create_model_crud_repo_from_model_class = <T> (givenModelClass: MyModelStatic) => {
+
+  const convertTypeCurry = convertModelCurry<T>();
+  const convertTypeListCurry = convertModelsCurry<T>();
+  const modelClass = givenModelClass as MyModelStatic;
+
+  const create = (createObj: any, createOptions?: CreateOptions) => {
+    return modelClass.create(createObj, createOptions).then(convertTypeCurry);
+  };
+
+
+
+  const findOne = (findOptions: FindOptions) => {
+    return modelClass.findOne(findOptions).then(convertTypeCurry);
+  };
+  const findById = (id: number, findOptions?: FindOptions) => {
+    const useWhere = findOptions
+      ? { ...findOptions, where: { id } }
+      : { where: { id } };
+    return modelClass.findOne(useWhere).then(convertTypeCurry);
+  };
+  const findAll = (findOptions: FindOptions) => {
+    return modelClass.findAll(findOptions).then(convertTypeListCurry);
+  };
+
+
+
+  const update = (updateObj: any, options: UpdateOptions) => {
+    const results = modelClass.update(updateObj, options);
+    return (results as any) as Promise<[number, (T | null)[]]>;
+  };
+  const updateById = (id: number, updateObj: any) => {
+    return modelClass.update(updateObj, { where: { id }, returning: true });
+    // .then(async (updates) => {
+    //   const fresh = await findById(id);
+    //   // return updates;
+    //   const returnValue = [updates[0], fresh] as [number, (T|null)];
+    //   return returnValue;
+    // });
+  };
+
+
+
+  const deleteFn = (destroyOptions: DestroyOptions) => {
+    const results = modelClass.destroy(destroyOptions);
+    return results;
+  };
+  const deleteById = (id: number) => {
+    const results = modelClass.destroy({ where: { id } });
+    return results;
+  };
+
+
+  const paginate = (params: IPaginateModelsOptions) => {
+    return paginateTable(modelClass, params).then(convertTypeListCurry);
+  };
+
+  const randomModels = (params: IRandomModelsOptions) => {
+    return getRandomModels<T>(modelClass, params).then(convertTypeListCurry);
+  };
+
+  
+
+  return {
+    create,
+  
+    findOne,
+    findAll,
+    findById,
+
+    update,
+    updateById,
+
+    delete: deleteFn,
+    deleteById,
+
+    paginate,
+    randomModels,
+  };
+
+};

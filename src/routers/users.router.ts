@@ -7,6 +7,8 @@ import { UserNotificationsRequestHandler } from '../request-handlers/notificatio
 import { MessagesRequestHandler } from '../request-handlers/messages.handler';
 import { ValidateRequestBodyDto } from '../middlewares/class-transformer-validator.middleware';
 import { UserSignInDto, UserSignUpDto } from '../dto/user.dto';
+import { SkillRequestHandler } from '../request-handlers/skill.handler';
+import { UserSkillAddDto } from '../dto/skill.dto';
 
 
 export const UsersRouter: Router = Router({ mergeParams: true });
@@ -58,6 +60,7 @@ UsersRouter.get('/:id', UsersRequestHandler.get_user_by_id);
 
 // POST
 UsersRouter.post('/', ValidateRequestBodyDto(UserSignUpDto), UsersRequestHandler.sign_up);
+
 UsersRouter.post('/:email/password-reset', UsersRequestHandler.submit_reset_password_request);
 UsersRouter.post('/:you_id/feedback', YouAuthorized, UsersRequestHandler.send_feedback);
 UsersRouter.post('/:you_id/notifications/update-last-opened', YouAuthorized, UserNotificationsRequestHandler.update_user_last_opened);
@@ -69,6 +72,7 @@ UsersRouter.post('/:you_id/cancel-subscription', YouAuthorized, UsersRequestHand
 
 // PUT
 UsersRouter.put('/', ValidateRequestBodyDto(UserSignInDto), UsersRequestHandler.sign_in);
+
 UsersRouter.put('/password-reset/:code', UsersRequestHandler.submit_password_reset_code);
 UsersRouter.put('/:you_id/info', YouAuthorized, UsersRequestHandler.update_info);
 UsersRouter.put('/:you_id/password', YouAuthorized, UsersRequestHandler.update_password);
@@ -95,3 +99,33 @@ UsersRouter.delete('/:you_id/remove-expo-device-and-push-token/:expo_token', You
   User Skill Context 
   
 */
+
+UsersRouter.get('/:you_id/skills/all', SkillRequestHandler.get_user_skills_all);
+UsersRouter.get('/:you_id/skills', SkillRequestHandler.get_user_skills);
+UsersRouter.get('/:you_id/skills/:user_skill_id', SkillRequestHandler.get_user_skills);
+
+
+UsersRouter.post('/:you_id/skills', YouAuthorized, ValidateRequestBodyDto(UserSkillAddDto), SkillRequestHandler.add_user_skill);
+UsersRouter.post('/:you_id/skills', YouAuthorized, ValidateRequestBodyDto(UserSkillAddDto), SkillRequestHandler.submit_user_skill);
+
+
+
+
+/*
+
+  Interview Context 
+  
+*/
+
+
+
+
+
+
+
+/*
+
+  Question Context 
+  
+*/
+

@@ -16,7 +16,7 @@ export function ValidateRequestBodyDto (ClassConstructor: ClassType<object>) {
       const dataDto = await transformAndValidate(ClassConstructor, request.body);
       console.log(`dataDto:`, dataDto);
       response.locals[`dto`] = dataDto
-      console.log(`======= END RequestLoggerMiddleware; NEXT =======\n\n\n`);
+      console.log(`======= END ValidateRequestBodyDto; NEXT =======\n\n\n`);
       return next();
     }
     catch (err) {
@@ -35,7 +35,7 @@ export function ValidateRequestBodyDto (ClassConstructor: ClassType<object>) {
         }
       };
       console.error(errors);
-      console.log(`======= END RequestLoggerMiddleware; NEXT =======\n\n\n`);
+      console.log(`======= END ValidateRequestBodyDto; NEXT =======\n\n\n`);
       return response.status(serviceMethodResults.status).json(serviceMethodResults.info);
     }
 

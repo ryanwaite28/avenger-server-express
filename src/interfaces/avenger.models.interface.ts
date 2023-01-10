@@ -96,6 +96,7 @@ export interface IUser extends ICommonModel {
   phone_verified: boolean,
   can_message: boolean,
   can_converse: boolean,
+  allow_skill_submissions: boolean,
   notifications_last_opened: string,
 }
 
@@ -333,11 +334,24 @@ export interface IUserSkill extends ICommonModel {
   submitter_id: number | null,
 }
 
+export interface IUserSkillSubmitRequest extends ICommonModel {
+  skill_id: number,
+  user_id: number,
+  submitter_id: number | null,
+  status: string,
+}
+
+export interface IUserSkillRatingReaction {
+  user_id: number,
+  rating_id: number,
+  reaction_type: string,
+}
+
 
 
 
 export interface IUserSkillRating extends ICommonModel {
-  skill_id: number,
+  user_skill_id: number,
   writer_id: number,
   aspect: string | null,
   rating: number,
@@ -418,7 +432,7 @@ export interface IIntervieweeRating extends ICommonModel {
 export interface IInterviewReaction extends ICommonModel {
   user_id: number,
   interview_id: number,
-  type: string,
+  reaction_type: string,
 }
 
 
@@ -437,7 +451,7 @@ export interface IInterviewComment extends ICommonModel {
 export interface IInterviewCommentReaction extends ICommonModel {
   user_id: number,
   comment_id: number,
-  type: string,
+  reaction_type: string,
 }
 
 
@@ -455,7 +469,7 @@ export interface IInterviewCommentReply extends ICommonModel {
 export interface IInterviewCommentReplyReaction extends ICommonModel {
   user_id: number,
   reply_id: number,
-  type: string,
+  reaction_type: string,
 }
 
 
@@ -511,7 +525,7 @@ export interface IAnswer extends ICommonModel {
 export interface IAnswerReaction extends ICommonModel {
   user_id: number,
   answer_id: number,
-  type: string,
+  reaction_type: string,
 }
 
 
@@ -530,7 +544,7 @@ export interface IAnswerComment extends ICommonModel {
 export interface IAnswerCommentReaction extends ICommonModel {
   user_id: number,
   comment_id: number,
-  type: string,
+  reaction_type: string,
 }
 
 
@@ -548,7 +562,7 @@ export interface IAnswerCommentReply extends ICommonModel {
 export interface IAnswerCommentReplyReaction extends ICommonModel {
   user_id: number,
   reply_id: number,
-  type: string,
+  reaction_type: string,
 }
 
 
