@@ -1,9 +1,7 @@
 import { NextFunction, Request, Response } from 'express';
-import { User } from '../models/avenger.model';
 import { HttpStatusCode } from '../enums/http-codes.enum';
 import { IUser } from '../interfaces/avenger.models.interface';
 import { get_user_by_id } from '../repos/users.repo';
-import { user_attrs_slim } from '../utils/constants.utils';
 import { AuthorizeJWT } from '../utils/helpers.utils';
 
 
@@ -90,6 +88,7 @@ export function UserIdsAreDifferent(
   return next();
 }
 
+
 export async function UserIdsAreDifferentWithModel(
   request: Request,
   response: Response,
@@ -102,11 +101,8 @@ export async function UserIdsAreDifferentWithModel(
       message: `user_id and you_id cannot be the same`
     });
   }
-  const user_model = await User.findOne({
-    where: { id: user_id },
-    attributes: user_attrs_slim
-  });
-  response.locals.user = user_model && user_model.toJSON();
+  const user_model = await get_user_by_id(user_id);
+  response.locals.user = user_model;
   return next();
 }
 

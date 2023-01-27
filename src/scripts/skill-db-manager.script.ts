@@ -6,6 +6,8 @@ import { checkSkillName } from "../utils/helpers.utils";
 import { Skill } from "../models/avenger.model";
 import { IMyModel } from "../interfaces/common.interface";
 import { avenger_db_init } from "../models/_def.model";
+import { readFileSync, writeFileSync } from 'fs';
+import { join } from 'path';
 
 
 
@@ -57,6 +59,72 @@ const destroy = async (query: number | string /* could be name or ID */) => {
   return deletes;
 };
 
+
+
+const reload_skills_table = async () => {
+  // await Skill.sync({ force: true });
+
+  console.log(`table reloaded.`);
+
+  const filename = `../../_public/static/txt/skills_data.txt`;
+  const file = join(__dirname, filename);
+  console.log(`reading contents of:`, file);
+  const contents = readFileSync(file, `utf8`);
+  // remove duplicates
+  const skills_data_obj = contents.split(/\n/gi).reduce((obj, name) => { obj[name] = 1; return obj }, {});
+  const skills_data = Object.keys(skills_data_obj);
+  skills_data.sort();
+  console.log(`done reading contents of:`, file);
+  // overwrite file
+  const w = writeFileSync(file, skills_data.join('\n'));
+  console.log('updated txt file.');
+
+  const create_list = skills_data.map(name => ({ name }));
+  
+  const start = Date.now();
+  console.log(`starting database processing:`, start);
+
+
+
+  // let newCount = 0;
+  // const creates = create_list.map((createObj) => {
+  //   return Skill.findOrCreate({ where: createObj }).then((res) => {
+  //     const data = { id: res[0].dataValues.id, name: res[0].dataValues.name, isNew: res[1] };
+  //     if (res[1]) {
+  //       console.log(data);
+  //       newCount++;
+  //     }
+  //     return data;
+  //   });
+  // });
+  // Promise.all(creates).then((list) => {
+  //   console.log('done', JSON.stringify(list));
+  //   console.log({ newCount });
+  // });
+
+
+
+
+
+  const results = await Skill.bulkCreate(create_list, { ignoreDuplicates: true, returning: true });
+  const results_json = JSON.stringify(results.map(r => r.dataValues));
+  console.log(`results_json:`, results_json);
+
+  const end = Date.now();
+  console.log(`end:`, end);
+  const total_time = (end - start) / 1000;
+  console.log(`total_time:`, total_time);
+
+
+
+
+
+  console.log(`finished reload`, { total_records_count: results.length });
+
+  process.exit(0);
+};
+
+
 const db_fn_map = {
   create,
   read,
@@ -86,11 +154,18 @@ const start = () => {
     }
   
     case `update`: {
-      break
+      break;
     }
   
     case `destroy`: {
-      break
+      break;
+    }
+
+    case `reload`: {
+      console.log(`reloading table...`);
+      reload_skills_table();
+      
+      break;
     }
     
     

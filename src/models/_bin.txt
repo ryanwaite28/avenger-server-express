@@ -1,0 +1,4 @@
+User.hasMany(Comment, { as: 'user_interview_comments', foreignKey: 'owner_id', sourceKey: 'id', scope: { [Op.and]: where(col("Comment.target_type"), Op.eq, MODELS.INTERVIEW) } });
+Comment.belongsTo(User, { as: 'owner', foreignKey: 'owner_id', targetKey: 'id', scope: { [Op.and]: where(col("Comment.target_type"), Op.eq, MODELS.INTERVIEW) } });
+Interview.hasMany(Comment, { as: 'comments', foreignKey: 'target_id', sourceKey: 'id', scope: { [Op.and]: where(col("Comment.target_type"), Op.eq, MODELS.INTERVIEW) } });
+Comment.belongsTo(Interview, { as: 'interview', foreignKey: 'target_id', targetKey: 'id', scope: { [Op.and]: where(col("Comment.target_type"), Op.eq, MODELS.INTERVIEW) } });

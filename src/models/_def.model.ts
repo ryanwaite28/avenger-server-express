@@ -82,7 +82,13 @@ export const common_model_options: Sequelize.InitOptions = {
 
 export const common_model_fields = {
   id:           { type: Sequelize.INTEGER, primaryKey: true, autoIncrement: true },
-  uuid:         { type: Sequelize.STRING, defaultValue: uuidv1 }
+  uuid:         { type: Sequelize.STRING, defaultValue: uuidv1 },
+  metadata:     { type: Sequelize.JSON, allowNull: true },
+};
+
+export const core_model_options = {
+  target_type:               { type: Sequelize.TEXT, allowNull: false, unique: 'target_model' },
+  target_id:                 { type: Sequelize.INTEGER, allowNull: false, unique: 'target_model' },
 };
 
 
@@ -92,14 +98,16 @@ export const common_model_fields = {
 
 export const avenger_db_init = async () => {
   const sequelize_db_sync_options: Sequelize.SyncOptions = {
-    force: false,
-    alter: false,
+    // force: true,
+    // alter: true,
   };
   
   console.log({
     DB_ENV,
     sequelize_db_sync_options,
   });
+
+  // await sequelize.drop();
 
   return sequelize.sync(sequelize_db_sync_options)
     .then(() => {
@@ -110,3 +118,4 @@ export const avenger_db_init = async () => {
       throw error;
     });
 };
+

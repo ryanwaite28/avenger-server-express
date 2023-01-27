@@ -7,10 +7,7 @@ import {
   compareSync
 } from 'bcrypt-nodejs';
 import {
-  fn,
-  Op,
-  col,
-  cast
+  Op
 } from 'sequelize';
 
 import { TokensService } from './tokens.service';
@@ -30,8 +27,11 @@ import { SignedUp_EMAIL, PasswordReset_EMAIL, PasswordResetSuccess_EMAIL, Verify
 import { UserResetPasswordRequest, SiteFeedback, User } from '../models/avenger.model';
 import { UserSignUpDto } from '../dto/user.dto';
 import {
+  check_user_follow,
   create_user,
   create_user_api_key,
+  create_user_follow,
+  delete_user_follow,
   get_random_users,
   get_user_api_key, 
   get_user_by_email, 
@@ -2275,6 +2275,56 @@ export class UsersService {
       error: false,
       info: {
         data: subscription
+      }
+    };
+    return serviceMethodResults;
+  }
+
+  static async check_user_follow(user_id: number, follow_id: number) {
+    const check = await check_user_follow(user_id, follow_id);
+    const serviceMethodResults: ServiceMethodResults = {
+      status: HttpStatusCode.OK,
+      error: false,
+      info: {
+        data: check
+      }
+    };
+    return serviceMethodResults;
+  }
+
+  static async toggle_user_follow(user_id: number, follow_id: number) {
+    if (user_id === follow_id) {
+      const serviceMethodResults: ServiceMethodResults = {
+        status: HttpStatusCode.BAD_REQUEST,
+        error: true,
+        info: {
+          message: `IDs cannot be the same`
+        }
+      };
+      return serviceMethodResults;
+    }
+
+    let check = await check_user_follow(user_id, follow_id);
+    let message: string = '';
+
+    if (check) {
+      // user is following; unfollow
+      const deletes = await delete_user_follow(user_id, follow_id);
+      check = null;
+      message = `Unfollowed`;
+    }
+    else {
+      // user is not following; follow
+      check = await create_user_follow(user_id, follow_id);
+      message = `Followed`;
+    }
+
+    const serviceMethodResults: ServiceMethodResults = {
+      status: HttpStatusCode.OK,
+      error: false,
+      info: {
+        message,
+        data: check
       }
     };
     return serviceMethodResults;

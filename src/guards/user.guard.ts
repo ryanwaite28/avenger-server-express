@@ -14,10 +14,10 @@ import { ServiceMethodResults } from '../interfaces/common.interface';
 */
 
 export async function EmailNotInUseGuard(request: Request, response: Response, next: NextFunction) {
-  const email: string = response.locals['validated_data'].email;
+  const email: string = response.locals['dto'].email;
   
-  const check_email = await get_user_by_email(email);
-  if (check_email) {
+  const check = await get_user_by_email(email);
+  if (check) {
     const serviceMethodResults: ServiceMethodResults = {
       status: HttpStatusCode.BAD_REQUEST,
       error: true,
@@ -33,10 +33,10 @@ export async function EmailNotInUseGuard(request: Request, response: Response, n
 
 
 export async function UsernameNotInUseGuard(request: Request, response: Response, next: NextFunction) {
-  const username: string = response.locals['validated_data'].username;
+  const username: string = response.locals['dto'].username;
   
-  const check_email = await get_user_by_username(username);
-  if (check_email) {
+  const check = await get_user_by_username(username);
+  if (check) {
     const serviceMethodResults: ServiceMethodResults = {
       status: HttpStatusCode.BAD_REQUEST,
       error: true,

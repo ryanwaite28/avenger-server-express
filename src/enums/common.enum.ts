@@ -73,5 +73,15 @@ export enum REACTIONS {
   LIKE = 'LIKE',
   DISLIKE = 'DISLIKE',
   LOVE = 'LOVE',
-  CONFUSED = 'CONFUSED'
+  CLAP = 'CLAP',
+  IDEA = 'IDEA',
+  CONFUSED = 'CONFUSED',
+  EXCITED = 'EXCITED',
+  CARE = 'CARE',
+  LAUGH = 'LAUGH',
+  WOW = 'WOW',
+  SAD = 'SAD',
+  UPSET = 'UPSET',
+  FIRE = 'FIRE',
+  ONE_HUNDRED = 'ONE_HUNDRED',
 }

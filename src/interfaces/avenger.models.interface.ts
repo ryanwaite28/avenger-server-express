@@ -15,12 +15,147 @@ export interface IUserSubscriptionInfo {
 export interface ICommonModel extends PlainObject {
   id: number,
   uuid: string,
+  metadata: string,
   created_at: string,
   updated_at: string,
   deleted_at: string,
 }
 
+export interface ICoreModel extends ICommonModel {
+  
+}
 
+
+export interface INoticeStats {
+  replies_count: number,
+  quotes_count: number,
+  shares_count: number,
+  reactions: PlainObject<number>,
+  reactions_count: number,
+  analytics_count: number,
+  seen_count: number,
+  details_expanded_count: number,
+}
+
+export interface INoticeUserAnalyticInfo {
+  seen: IAnalytic,
+  details_expanded: IAnalytic,
+  replied: INotice,
+  quoted: INotice,
+  shared: INotice,
+  reacted: IReaction,
+}
+
+
+
+
+export interface IInterviewStats {
+  skills_count: number,
+  interviewer_rating: {
+    avg: number,
+    count: number
+  },
+  interviewee_rating: {
+    avg: number,
+    count: number
+  },
+  comments_count: number,
+  reactions: PlainObject<number>,
+  reactions_count: number,
+  analytics_count: number,
+}
+
+export interface IInterviewUserAnalyticInfo {
+  seen: IAnalytic,
+  details_expanded: IAnalytic,
+  reacted: IReaction,
+  commented: IReaction,
+}
+
+
+
+/** Base/Common Tables */
+
+export interface IAnalytic extends ICoreModel {
+  user_id: number,
+  event: string | null,
+}
+
+export interface IMention extends ICoreModel {
+  user_id: number,
+  mentioned_id: number,
+}
+
+export interface IReaction extends ICoreModel {
+  user_id: number,
+  reaction_type: string,
+}
+
+export interface IComment extends ICoreModel {
+  owner_id: number,
+  body: string,
+}
+
+export interface IReply extends ICoreModel {
+// reply depends on comment; no need for   owner_id: number,
+  comment_id: number,
+  body: string,
+}
+
+export interface IRating extends ICoreModel {
+  writer_id: number,
+  aspect: string | null,
+  rating: number,
+  title: string,
+  summary: string,
+  image_link: string | null,
+  image_id: string | null,
+}
+
+export interface IContentSkill extends ICoreModel {
+  skill_id: number,
+}
+
+export interface IPhoto extends ICoreModel {
+  photo_id: string | null,
+  photo_link: string | null,
+  photo_bucket: string | null,
+  photo_key: string | null,
+}
+
+export interface IVideo extends ICoreModel {
+  video_id: string | null,
+  video_link: string | null,
+  video_bucket: string | null,
+  video_key: string | null,
+}
+
+export interface IAudio extends ICoreModel {
+  audio_id: string | null,
+  audio_link: string | null,
+  audio_bucket: string | null,
+  audio_key: string | null,
+}
+
+export interface IField extends ICoreModel {
+  fieldname: string,
+  fieldvalue: string,
+}
+
+export interface IActionRequest extends ICoreModel {
+  from_id: number,
+  to_id: number,
+  action: string,
+  status: string,
+}
+
+export interface IFollow extends ICoreModel {
+  user_id: number,
+}
+
+
+
+/** END Base/Common Tables */
 
 
 
@@ -44,8 +179,11 @@ export interface IAdmin extends ICommonModel {
 }
 
 
+/** END admin models */
 
-/** user models */
+
+
+/** user model */
 
 export interface IUser extends ICommonModel {
   username: string,
@@ -62,7 +200,6 @@ export interface IUser extends ICommonModel {
 
   headline: string,
   bio: string,
-  tags: string,
   icon_link: string | null,
   icon_id: string | null,
 
@@ -100,14 +237,25 @@ export interface IUser extends ICommonModel {
   notifications_last_opened: string,
 }
 
-
-
-
-export interface IUserField extends ICommonModel {
-  user_id: number,
-  fieldname: string,
-  fieldvalue: string,
+export interface ISkill extends ICommonModel {
+  name: string,
+  status: string,
 }
+
+export interface ITag extends ICommonModel {
+  name: string,
+  status: string,
+}
+
+
+/** END user model */
+
+
+
+
+
+
+
 
 
 
@@ -137,7 +285,7 @@ export interface IUserExpoDevice extends ICommonModel {
   token: string,
   device_info: string | null,
   device_id: string,
-  device_type: string,
+  device_reaction_type: string,
   device_platform: string,
 }
 
@@ -149,7 +297,7 @@ export interface IUserDevice extends ICommonModel {
   token: string,
   device_info: string | null,
   device_id: string,
-  device_type: string,
+  device_reaction_type: string,
   device_platform: string,
 }
 
@@ -161,15 +309,6 @@ export interface IUserResetPasswordRequest extends ICommonModel {
   completed: boolean,
   unique_value: string,
 }
-
-
-
-
-export interface IUserFollow extends ICommonModel {
-  user_id: number,
-  follow_id: number,
-}
-
 
 
 
@@ -204,21 +343,6 @@ export interface IUserAccountHold extends ICommonModel {
 
 
 
-export interface IUserRating extends ICommonModel {
-  user_id: number,
-  writer_id: number,
-  aspect: string | null,
-  rating: number,
-  title: string,
-  summary: string,
-  tags: string,
-  image_link: string | null,
-  image_id: string | null,
-}
-
-
-
-
 export interface IMessagingRequest extends ICommonModel {
   user_id: number,
   sender_id: number,
@@ -244,123 +368,46 @@ export interface IMessage extends ICommonModel {
 
 
 
-export interface IMessagePhoto extends ICommonModel {
-  message_id: number,
-  photo_link: string,
-  photo_id: string,
-}
-
-
-
-
-
 /** stripe models */
 
 export interface IStripeAction extends ICommonModel {
+  user_id: number | null,
   action_event: string, // charge, refund, transfer
   action_id: string,
   action_metadata: string | null,
-  target_type: string | null,
+  target_reaction_type: string | null,
   target_id: number | null,
   target_metadata: string | null,
   status: string,
 }
 
 
-export interface IUserPaymentIntent extends ICommonModel {
-  user_id: number,
-  payment_intent_id: string,
-  payment_intent_event: string,
-  target_type: string | null,
-  target_id: number | null,
-  status: string,
-}
 
 
 
 
-export interface IUserCharge extends ICommonModel {
-  user_id: number,
-  charge_id: string,
-  charge_event: string,
-  
-  target_type: string | null,
-  target_id: number | null,
-  status: string,
-}
+/** user notices (tweets) */
 
+export interface INotice extends ICommonModel {
+  owner_id: number,
 
+  pinned_reply_id: number | null,
+  parent_notice_id: number | null, // if this notice is a reply to another
+  quoting_notice_id: number | null, // if this notice is quoting another
+  share_notice_id: number | null, // if this notice is a share of another
 
+  body: string | null,
 
-export interface IUserTransfer extends ICommonModel {
-  user_id: number,
-  transfer_id: string,
-  transfer_event: string,
-  
-  target_type: string | null,
-  target_id: number | null,
-  status: string,
-}
-
-
-
-
-export interface IUserRefund extends ICommonModel {
-  user_id: number,
-  refund_id: string,
-  refund_event: string,
-  
-  target_type: string | null,
-  target_id: number | null,
-  status: string,
+  is_explicit: boolean,
+  is_private: boolean,
+  visibility: string,
 }
 
 
 
 
 
-/** skill models */
 
-export interface ISkill extends ICommonModel {
-  name: string,
-  status: string,
-}
-
-
-
-export interface IUserSkill extends ICommonModel {
-  skill_id: number,
-  user_id: number,
-  submitter_id: number | null,
-}
-
-export interface IUserSkillSubmitRequest extends ICommonModel {
-  skill_id: number,
-  user_id: number,
-  submitter_id: number | null,
-  status: string,
-}
-
-export interface IUserSkillRatingReaction {
-  user_id: number,
-  rating_id: number,
-  reaction_type: string,
-}
-
-
-
-
-export interface IUserSkillRating extends ICommonModel {
-  user_skill_id: number,
-  writer_id: number,
-  aspect: string | null,
-  rating: number,
-  title: string,
-  summary: string,
-  tags: string,
-  image_link: string,
-  image_id: string,
-}
 
 
 
@@ -369,12 +416,12 @@ export interface IUserSkillRating extends ICommonModel {
 /** interview models */
 
 export interface IInterview extends ICommonModel {
+  owner_id: number,
   interviewer_id: number | null,
   interviewee_id: number | null,
   title: string,
-  body: string,
+  description: string,
   industry: string | null,
-  tags: string,
   skills_accessed: string,
   view_state: string,
   is_private: boolean,
@@ -389,88 +436,11 @@ export interface IInterview extends ICommonModel {
   video_link: string | null,
   video_bucket: string | null,
   video_key: string | null,
-  
-}
-
-// skills pertaining to interview
-export interface IInterviewSkill extends ICommonModel {
-  interview_id: number,
-  skill_id: number,
 }
 
 
 
 
-export interface IInterviewerRating extends ICommonModel {
-  interview_id: number,
-  writer_id: number,
-  rating: number,
-  title: string,
-  summary: string,
-  image_link: string,
-  image_id: string,
-}
-
-
-
-
-export interface IIntervieweeRating extends ICommonModel {
-  interview_id: number,
-  writer_id: number,
-  rating: number,
-  title: string,
-  summary: string,
-  image_link: string,
-  image_id: string,
-}
-
-
-
-
-
-
-export interface IInterviewReaction extends ICommonModel {
-  user_id: number,
-  interview_id: number,
-  reaction_type: string,
-}
-
-
-
-
-
-export interface IInterviewComment extends ICommonModel {
-  user_id: number,
-  interview_id: number,
-  body: string,
-}
-
-
-
-
-export interface IInterviewCommentReaction extends ICommonModel {
-  user_id: number,
-  comment_id: number,
-  reaction_type: string,
-}
-
-
-
-
-export interface IInterviewCommentReply extends ICommonModel {
-  user_id: number,
-  comment_id: number,
-  body: string,
-}
-
-
-
-
-export interface IInterviewCommentReplyReaction extends ICommonModel {
-  user_id: number,
-  reply_id: number,
-  reaction_type: string,
-}
 
 
 
@@ -480,10 +450,11 @@ export interface IInterviewCommentReplyReaction extends ICommonModel {
 
 /** question models */
 
+// used for grouping question models
 export interface IAssessment extends ICommonModel {
   owner_id: number,
   title: string,
-  summary: string,
+  description: string,
   image_link: string | null,
   image_id: string | null,
 }
@@ -496,17 +467,10 @@ export interface IQuestion extends ICommonModel {
   assessment_id: number | null,
   difficulty: string | null,
   title: string,
-  summary: string,
+  description: string,
   image_link: string | null,
   image_id: string | null,
 }
-
-// skills pertaining to question
-export interface IQuestionSkill extends ICommonModel {
-  question_id: number,
-  skill_id: number,
-}
-
 
 
 
@@ -514,7 +478,7 @@ export interface IAnswer extends ICommonModel {
   owner_id: number,
   question_id: number,
   title: string,
-  summary: string,
+  description: string,
   video_link: string | null,
   video_id: string | null,
 }
@@ -522,69 +486,27 @@ export interface IAnswer extends ICommonModel {
 
 
 
-export interface IAnswerReaction extends ICommonModel {
-  user_id: number,
-  answer_id: number,
-  reaction_type: string,
-}
 
 
-
-
-
-export interface IAnswerComment extends ICommonModel {
-  user_id: number,
-  answer_id: number,
-  body: string,
-}
-
-
-
-
-export interface IAnswerCommentReaction extends ICommonModel {
-  user_id: number,
-  comment_id: number,
-  reaction_type: string,
-}
-
-
-
-
-export interface IAnswerCommentReply extends ICommonModel {
-  user_id: number,
-  comment_id: number,
-  body: string,
-}
-
-
-
-
-export interface IAnswerCommentReplyReaction extends ICommonModel {
-  user_id: number,
-  reply_id: number,
-  reaction_type: string,
-}
-
-
-
-export interface IAnswerRating extends ICommonModel {
-  answer_id: number,
-  writer_id: number,
-  rating: number,
-  title: string,
-  summary: string,
-  tags: string,
-  image_link: string | null,
-  image_id: string | null,
-}
-
-
-
+/** Misc */
 
 
 export interface ISiteFeedback extends ICommonModel {
   user_id: number,
   rating: number,
+  title: string,
+  summary: string,
+}
+
+
+
+
+export interface IContentReported extends ICommonModel {
+  user_id: number,
+  target_user_id: number,
+  target_type: string,
+  target_id: number,
+  category: string,
   title: string,
   summary: string,
 }
@@ -601,7 +523,16 @@ export interface IApiKey extends ICommonModel {
   phone: string,
   website: string,
   verified: boolean,
-  requests_count: number,
+}
+
+export interface IApiKeyRequest extends ICommonModel {
+  api_key_id: number,
+  url: string,
+  method: string | null,
+  headers: string,
+  cookie: string,
+  body: string,
+  files: number,
 }
 
 
@@ -611,3 +542,4 @@ export interface INewsDataCache extends ICommonModel {
   name: string,
   json_data: string,
 }
+

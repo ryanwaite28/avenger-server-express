@@ -8,15 +8,57 @@ import {
   Model,
   FindAttributeOptions,
   GroupOption,
-  Order
-} from 'sequelize';
-import { convertModel, convertModelCurry, convertModels } from '../utils/helpers.utils';
-import { IPaginateModelsOptions, IRandomModelsOptions, MyModelStatic, PlainObject } from '../interfaces/common.interface';
-import { IUserUserNotificationLastOpened } from '../interfaces/avenger.models.interface';
-import { UserUserNotificationLastOpened } from '../models/avenger.model';
+  Order,
+} from "sequelize";
+import {
+  convertModel,
+  convertModelCurry,
+  convertModels,
+  create_model_crud_repo_from_model_class,
+} from "../utils/helpers.utils";
+import {
+  IPaginateModelsOptions,
+  IRandomModelsOptions,
+  MyModelStatic,
+  PlainObject,
+} from "../interfaces/common.interface";
+import {
+  IActionRequest,
+  IAnalytic,
+  IAudio,
+  IComment,
+  IContentSkill,
+  IField,
+  IFollow,
+  IMention,
+  IPhoto,
+  IRating,
+  IReaction,
+  IReply,
+  ISkill,
+  ITag,
+  IUserUserNotificationLastOpened,
+  IVideo,
+} from "../interfaces/avenger.models.interface";
+import {
+  Skill,
+  Tag,
+  User,
+  UserUserNotificationLastOpened,
+} from "../models/avenger.model";
+import { user_attrs_slim } from "../utils/constants.utils";
 
 
 
+
+
+
+export const generic_owner_include: Includeable[] = [
+  { model: User, as: `owner`, attributes: user_attrs_slim },
+];
+export const generic_user_include: Includeable[] = [
+  { model: User, as: `user`, attributes: user_attrs_slim },
+];
 
 export async function paginateTable(model: MyModelStatic, options: IPaginateModelsOptions)  {
   const { user_id_field, user_id, min_id, include, attributes, group, whereClause, orderBy } = options;

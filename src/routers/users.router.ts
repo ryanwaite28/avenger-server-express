@@ -8,7 +8,7 @@ import { MessagesRequestHandler } from '../request-handlers/messages.handler';
 import { ValidateRequestBodyDto } from '../middlewares/class-transformer-validator.middleware';
 import { UserSignInDto, UserSignUpDto } from '../dto/user.dto';
 import { SkillRequestHandler } from '../request-handlers/skill.handler';
-import { UserSkillAddDto } from '../dto/skill.dto';
+
 
 
 export const UsersRouter: Router = Router({ mergeParams: true });
@@ -55,6 +55,8 @@ UsersRouter.get('/:you_id/messages/:user_id/:min_id', YouAuthorized, UserIdsAreD
 
 UsersRouter.get('/:user_id/get-subscription-info', UserExists, UsersRequestHandler.get_subscription_info);
 
+UsersRouter.get('/:id/follows/:follow_id', UsersRequestHandler.check_user_follow);
+
 UsersRouter.get('/:id', UsersRequestHandler.get_user_by_id);
 
 
@@ -69,6 +71,10 @@ UsersRouter.post('/:you_id/send-message/:user_id', YouAuthorized, UserIdsAreDiff
 UsersRouter.post('/:you_id/customer-cards-payment-methods/:payment_method_id', YouAuthorized, UsersRequestHandler.add_card_payment_method_to_user_customer);
 UsersRouter.post('/:you_id/create-subscription/:payment_method_id', YouAuthorized, UsersRequestHandler.create_subscription);
 UsersRouter.post('/:you_id/cancel-subscription', YouAuthorized, UsersRequestHandler.cancel_subscription);
+
+UsersRouter.post('/:you_id/follows/:follow_id', YouAuthorized, UsersRequestHandler.toggle_user_follow);
+
+
 
 // PUT
 UsersRouter.put('/', ValidateRequestBodyDto(UserSignInDto), UsersRequestHandler.sign_in);
@@ -104,9 +110,6 @@ UsersRouter.get('/:you_id/skills/all', SkillRequestHandler.get_user_skills_all);
 UsersRouter.get('/:you_id/skills', SkillRequestHandler.get_user_skills);
 UsersRouter.get('/:you_id/skills/:user_skill_id', SkillRequestHandler.get_user_skills);
 
-
-UsersRouter.post('/:you_id/skills', YouAuthorized, ValidateRequestBodyDto(UserSkillAddDto), SkillRequestHandler.add_user_skill);
-UsersRouter.post('/:you_id/skills', YouAuthorized, ValidateRequestBodyDto(UserSkillAddDto), SkillRequestHandler.submit_user_skill);
 
 
 

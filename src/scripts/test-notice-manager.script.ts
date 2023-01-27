@@ -2,7 +2,7 @@ import * as dotenv from 'dotenv';
 dotenv.config();
 
 import { checkSkillName } from "../utils/helpers.utils";
-import { Notice, NoticeAudio, NoticePhoto, NoticeVideo, User } from "../models/avenger.model";
+import { Notice } from "../models/avenger.model";
 import { IMyModel } from "../interfaces/common.interface";
 import { avenger_db_init } from "../models/_def.model";
 import { create_user } from '../repos/users.repo';
@@ -100,16 +100,16 @@ async function test() {
     include: [
       // { model: User, as: `owner`, attributes: user_attrs_slim },
 
+      // { model: NoticePhoto, as: `notice_photos` },
+      // { model: NoticeVideo, as: `notice_videos` },
+      // { model: NoticeAudio, as: `notice_audios` },
+
       // { model: Notice, as: `notice_replies`, attributes: null, include: [{ model: User, as: `owner`, attributes: user_attrs_slim }] },
       // { model: Notice, as: `parent_notice`, attributes: null, include: [{ model: User, as: `owner`, attributes: user_attrs_slim }] },
       // { model: Notice, as: `notice_quotes`, attributes: null, include: [{ model: User, as: `owner`, attributes: user_attrs_slim }] },
       // { model: Notice, as: `quote_notice`, attributes: null, include: [{ model: User, as: `owner`, attributes: user_attrs_slim }] },
       // { model: Notice, as: `notice_shares`, attributes: null, include: [{ model: User, as: `owner`, attributes: user_attrs_slim }] },
       // { model: Notice, as: `share_notice`, attributes: null, include: [{ model: User, as: `owner`, attributes: user_attrs_slim }] },
-
-      // { model: NoticePhoto, as: `notice_photos` },
-      // { model: NoticeVideo, as: `notice_videos` },
-      // { model: NoticeAudio, as: `notice_audios` },
     ],
     attributes: {
       include: [

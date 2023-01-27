@@ -1,3 +1,4 @@
+import { Response } from 'express';
 import { HttpStatusCode } from '../enums/http-codes.enum';
 import { ServiceMethodResults } from '../interfaces/common.interface';
 
@@ -22,6 +23,7 @@ export function CatchRequestHandlerError(options?: {
       } 
       catch (error) {
         console.error(options?.errorMessage || `CatchRequestHandlerError:`, error);
+        console.log({ key, target });
 
         if (options?.throwError) {
           throw error;
@@ -31,18 +33,18 @@ export function CatchRequestHandlerError(options?: {
           status: HttpStatusCode.INTERNAL_SERVER_ERROR,
           error: true,
           info: {
-            message: `Error in request handler method; something went wrong...`,
-            error,
+            message: `Server error with request; something went wrong...`,
             data: {
               errorMessage: options?.errorMessage,
-              target,
               key
             }
           }
         };
 
         console.log(`returning handler error catch:`, serviceMethodResults);
-        return serviceMethodResults; 
+        const response: Response = args[1];
+        // return serviceMethodResults; 
+        return response.status(serviceMethodResults.status).json(serviceMethodResults.info);
       }
     };
 

@@ -21,7 +21,7 @@ export class MessagesRequestHandler {
   static async send_user_message(request: Request, response: Response): ExpressResponse {
     const you_id: number = parseInt(request.params.you_id, 10);
     const user_id: number = parseInt(request.params.user_id, 10);
-    const body: string = response.locals['validated_data'];
+    const body: string = response.locals['dto'];
     const options = { you_id, user_id, body };
 
     const serviceMethodResults: ServiceMethodResults = await MessagesService.send_user_message(options);

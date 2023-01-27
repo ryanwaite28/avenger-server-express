@@ -38,6 +38,8 @@ export async function create_notification_and_send(
     target_type: string;
     target_id: number;
     to_phone?: string,
+    rooms?: string | string[],
+    // addonEvents
     extras_data?: PlainObject,
   }
 ) {
@@ -77,6 +79,19 @@ export async function create_notification_and_send(
         message: notification.message,
       });
     }
+
+    // TODO: send event to other optional rooms
+    // if (!!params.rooms) {
+    //   if ((typeof params.rooms === 'string') || (params.rooms.length)) {
+    //     CommonSocketEventsHandler.emitEventToRoom({
+    //       room: `NOTICE:${dto.share_notice_id}`,
+    //       event: `NOTICE:${dto.share_notice_id}:${AVENGER_EVENT_TYPES.NOTICE_SHARED}`,
+    //       data: {
+    //         notice,
+    //       }
+    //     });
+    //   }
+    // }
 
     return notification;
   });

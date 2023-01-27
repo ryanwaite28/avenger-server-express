@@ -14,6 +14,7 @@ import { SkillRouter } from './skill.router';
 import { QuestionRouter } from './question.router';
 import { AssessmentRouter } from './assessment.router';
 import { ValidateApiRequest } from '../middlewares/api-client-validation.middleware';
+import { NoticeRouter } from './notice.router';
 
 
 
@@ -27,6 +28,7 @@ AppRouter.use('/common', CommonRouter);
 
 AppRouter.use('/admins', AdminRouter);
 AppRouter.use('/users', UsersRouter);
+AppRouter.use('/notices', NoticeRouter);
 AppRouter.use('/skills', SkillRouter);
 AppRouter.use('/interviews', InterviewRouter);
 AppRouter.use('/assessments', AssessmentRouter);

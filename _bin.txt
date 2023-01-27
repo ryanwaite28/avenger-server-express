@@ -79,15 +79,6 @@ AnswerCommentReplyReaction.init({
 
 
 
-:([\s]+)\{(.*)(STRING|DATE|TEXT|JSON)(.*)allowNull: true(.*)\},?       ->   : string | null,
-:([\s]+)\{(.*)(STRING|DATE|TEXT|JSON)(.*)allowNull: false(.*)\},?       ->   : string,
-
-:([\s]+)\{(.*)(INTEGER|FLOAT|DOUBLE)(.*)allowNull: true(.*)\},?   ->   : number | null,
-:([\s]+)\{(.*)(INTEGER|FLOAT|DOUBLE)(.*)allowNull: false(.*)\},?   ->   : number,
-
-:([\s]+)\{(.*)(BOOLEAN)(.*)allowNull: true(.*)\},?                ->   : boolean | null,
-:([\s]+)\{(.*)(BOOLEAN)(.*)allowNull: false(.*)\},?                ->   : boolean,
-
 
 
 
@@ -122,8 +113,8 @@ Router\.(get\(|post\(|put\(|delete\()'(.*)', (.*);     -> .     Router.route('$2
 
 
 
-static async __method_name__() {
-
+static async __method_name__(): Promise<ServiceMethodResults> {
+    const data = await __method_name__();
     const serviceMethodResults: ServiceMethodResults = {
       status: HttpStatusCode.OK,
       error: false,

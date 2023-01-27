@@ -4,31 +4,31 @@ import {
   Op,
   WhereOptions
 } from 'sequelize';
-import { ApiKey, User, UserExpoDevice } from '../models/avenger.model';
+import { ApiKey, User, UserExpoDevice, UserCoreModels } from '../models/avenger.model';
 import { PlainObject } from '../interfaces/common.interface';
 import { user_attrs_slim } from '../utils/constants.utils';
-import { convertModelCurry, convertModelsCurry, convertModel } from '../utils/helpers.utils';
-import { IApiKey, IUser, IUserExpoDevice } from '../interfaces/avenger.models.interface';
+import { convertModelCurry, convertModelsCurry, convertModel, create_model_crud_repo_from_model_class } from '../utils/helpers.utils';
+import { IApiKey, IUser, IUserExpoDevice, IFollow } from '../interfaces/avenger.models.interface';
 import { UpdateUserDto, UserSignUpDto, UserSignInDto } from '../dto/user.dto';
+import { MODELS } from '../enums/avenger.enum';
+// import { analytic_crud, comment_crud, contentskill_crud, follow_crud, rating_crud, reaction_crud, reply_crud } from "./_base-model.repo";
+import { generic_owner_include } from "./_common.repo";
 
 
 
 
-const convertUserModel = convertModelCurry<IUser>();
-const convertUserModels = convertModelsCurry<IUser>();
-
-const convertUserExpoDeviceModel = convertModelCurry<IUserExpoDevice>();
-const convertUserExpoDeviceModels = convertModelsCurry<IUserExpoDevice>();
+export const user_crud = create_model_crud_repo_from_model_class<IUser>(User);
+const follow_crud = create_model_crud_repo_from_model_class<IFollow>(UserCoreModels[MODELS.FOLLOW]);
+const user_expo_device_crud = create_model_crud_repo_from_model_class<IUserExpoDevice>(UserExpoDevice);
 
 
 
 export async function get_user_by_where(whereClause: WhereOptions) {
-  const user_model = await User.findOne({
+  const user = await user_crud.findOne({
     where: whereClause,
     attributes: user_attrs_slim
-  })
-  .then(convertUserModel);
-  return user_model;
+  });
+  return user;
 }
 
 export async function create_user(params: UserSignUpDto) {
@@ -39,7 +39,7 @@ export async function create_user(params: UserSignUpDto) {
 }
 
 export async function get_random_users(limit: number) {
-  const users = await User.findAll({
+  const users = await user_crud.findAll({
     limit,
     order: [fn( 'RANDOM' )],
     include: [{
@@ -56,17 +56,15 @@ export async function get_random_users(limit: number) {
       'deleted_at',
     ]
   })
-  .then(convertUserModels);
   return users;
 }
 
 export async function get_user_by_email(email: string) {
   try {
-    const userModel = await User.findOne({
+    const userModel = await user_crud.findOne({
       where: { email },
       attributes: user_attrs_slim
     })
-    .then(convertUserModel);
     return userModel;
   } catch (e) {
     console.log(`get_user_by_email error - `, e);
@@ -76,11 +74,10 @@ export async function get_user_by_email(email: string) {
 
 export async function get_user_by_paypal(paypal: string) {
   try {
-    const userModel = await User.findOne({
+    const userModel = await user_crud.findOne({
       where: { paypal },
       attributes: user_attrs_slim
-    })
-    .then(convertUserModel);
+    });
     return userModel;
   } catch (e) {
     console.log(`get_user_by_paypal error - `, e);
@@ -90,15 +87,14 @@ export async function get_user_by_paypal(paypal: string) {
 
 export async function get_user_by_phone(phone: string) {
   try {
-    const userModel = await User.findOne({
+    const userModel = await user_crud.findOne({
       where: { phone },
       attributes: user_attrs_slim,
       include: [{
         model: UserExpoDevice,
         as: `expo_devices`,
       }],
-    })
-    .then(convertUserModel);
+    });
     return userModel;
   } catch (e) {
     console.log(`get_user_by_phone error - `, e);
@@ -109,7 +105,7 @@ export async function get_user_by_phone(phone: string) {
 
 
 export async function get_user_by_id(id: number) {
-  const user_model = await User.findOne({
+  const user_model = await user_crud.findOne({
     where: { id },
     include: [{
       model: UserExpoDevice,
@@ -118,30 +114,24 @@ export async function get_user_by_id(id: number) {
     attributes: {
       exclude: ['password']
     }
-  })
-  .then(convertUserModel);
+  });
   return user_model;
 }
 
 export async function get_user_by_stripe_customer_account_id(stripe_customer_account_id: string) {
-  const user_model = await User.findOne({
+  const user_model = await user_crud.findOne({
     where: { stripe_customer_account_id },
     include: [{
       model: UserExpoDevice,
       as: `expo_devices`,
     }],
     attributes: user_attrs_slim
-  })
-  .then(convertUserModel)
-  .catch((err) => {
-    console.log(`could not get user by stripe_customer_account_id`, { stripe_customer_account_id }, err);
-    throw err;
-  })
+  });
   return user_model;
 }
 
 export async function get_user_by_username(username: string) {
-  const user_model = await User.findOne({
+  const user_model = await user_crud.findOne({
     where: { username },
     attributes: { exclude: ['password'] },
     include: [{
@@ -149,21 +139,19 @@ export async function get_user_by_username(username: string) {
       as: `expo_devices`,
     }],
   })
-  .then(convertUserModel);
   return user_model;
 }
 
 export async function get_user_by_uuid(uuid: string) {
   try {
-    const user_model = await User.findOne({
+    const user_model = await user_crud.findOne({
       where: { uuid },
       attributes: { exclude: ['password'] },
       include: [{
         model: UserExpoDevice,
         as: `expo_devices`,
       }],
-    })
-    .then(convertUserModel);
+    });
     return user_model;
   } catch (e) {
     console.log({
@@ -177,7 +165,7 @@ export async function get_user_by_uuid(uuid: string) {
 
 export async function update_user(newState: Partial<UpdateUserDto>, whereClause: WhereOptions) {
   try {
-    const user_model_update = await User.update(newState, { where: whereClause, returning: true });
+    const user_model_update = await user_crud.update(newState, { where: whereClause, returning: true });
     return user_model_update;
   }
   catch (e) {
@@ -231,17 +219,15 @@ export async function create_user_api_key(params: {
 
 
 export function get_user_expo_device_by_token(token: string) {
-  return UserExpoDevice.findOne({
+  return user_expo_device_crud.findOne({
     where: { token,  }
   })
-  .then(convertUserExpoDeviceModel);
 }
 
 export function get_user_expo_devices(user_id: number) {
-  return UserExpoDevice.findAll({
+  return user_expo_device_crud.findAll({
     where: { user_id }
-  })
-  .then(convertUserExpoDeviceModels);
+  });
 }
 
 export function register_expo_device_and_push_token(params: {
@@ -253,12 +239,11 @@ export function register_expo_device_and_push_token(params: {
   const useDeviceInfo = device_info && JSON.stringify(device_info);
   const createParams = { user_id, token, device_info: useDeviceInfo };
   console.log(`register_expo_device_and_push_token:`, { createParams });
-  return UserExpoDevice.create(params)
-  .then((model) => convertUserExpoDeviceModel(model)!);
+  return user_expo_device_crud.create(params);
 }
 
 export function remove_expo_device_from_user(token: string) {
-  return UserExpoDevice.destroy({
+  return user_expo_device_crud.delete({
     where: {
       token,
     }
@@ -266,10 +251,52 @@ export function remove_expo_device_from_user(token: string) {
 }
 
 export function remove_expo_device_and_push_token(user_id: number, token: string) {
-  return UserExpoDevice.destroy({
+  return user_expo_device_crud.delete({
     where: {
       user_id,
       token,
     }
   });
+}
+
+
+
+
+export async function get_user_followings_ids(user_id: number) {
+  const ids: number[] = await follow_crud.findAll({
+    where: { user_id },
+    attributes: ['follow_id'],
+  })
+  .then((models) => models.map(m => m.follow_id));
+  return ids;
+}
+
+export async function get_user_followers_ids(user_id: number) {
+  const ids: number[] = await follow_crud.findAll({
+    where: { user_id },
+    attributes: ['user_id'],
+  })
+  .then((models) => models.map(m => m.user_id));
+  return ids;
+}
+
+export async function check_user_follow(user_id: number, follow_id: number) {
+  const check = await follow_crud.findOne({
+    where: { user_id, follow_id },
+  });
+  return check;
+}
+
+export async function create_user_follow(user_id: number, follow_id: number) {
+  const follow = await follow_crud.create(
+    { user_id, follow_id },
+  );
+  return follow;
+}
+
+export async function delete_user_follow(user_id: number, follow_id: number) {
+  const deletes = await follow_crud.destroy({
+    where: { user_id, follow_id },
+  });
+  return deletes;
 }

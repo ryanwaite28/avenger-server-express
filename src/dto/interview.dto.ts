@@ -5,10 +5,11 @@ import {
   IsOptional,
   IsString,
   Matches,
-  IsEnum
+  IsEnum,
+  ValidateIf
 } from 'class-validator';
 import {
-  GENERIC_TEXT_REGEX
+  GENERIC_TEXT_REGEX, YOUTUBE_URL_EMBED
 } from '../regex/common.regex';
 import {
   RATINGS
@@ -19,6 +20,10 @@ import { INTERVIEW_VIEW_STATE } from '../enums/avenger.enum';
 
 
 export class InterviewCreateDto {
+  @IsNotEmpty()
+  @IsInt()
+  owner_id: number;
+
   @IsOptional()
   @IsInt()
   interviewer_id: number | null;
@@ -27,15 +32,17 @@ export class InterviewCreateDto {
   @IsInt()
   interviewee_id: number | null;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
+  @ValidateIf(interview => interview.title)
   @Matches(GENERIC_TEXT_REGEX)
   title: string;
-
-  @IsNotEmpty()
+  
+  @IsOptional()
   @IsString()
+  @ValidateIf(interview => interview.description)
   @Matches(GENERIC_TEXT_REGEX)
-  body: string;
+  description: string;
 
   @IsOptional()
   @IsString()
@@ -78,7 +85,7 @@ export class InterviewCreateDto {
   video_id: string | null;
 
   @IsOptional()
-  @IsString()
+  @Matches(YOUTUBE_URL_EMBED)
   video_link: string | null;
 
   @IsOptional()
@@ -103,7 +110,7 @@ export class InterviewUpdateDto {
   @IsNotEmpty()
   @IsString()
   @Matches(GENERIC_TEXT_REGEX)
-  body: string;
+  description: string;
 
   @IsOptional()
   @IsString()
@@ -197,7 +204,7 @@ export class IntervieweeRatingCreateDto {
 export class InterviewCommentCreateDto {
   @IsNotEmpty()
   @IsInt()
-  user_id: number;
+  owner_id: number;
 
   @IsNotEmpty()
   @IsInt()
@@ -223,7 +230,7 @@ export class InterviewCommentUpdateDto {
 export class InterviewCommentReplyCreateDto {
   @IsNotEmpty()
   @IsInt()
-  user_id: number;
+  owner_id: number;
 
   @IsNotEmpty()
   @IsInt()

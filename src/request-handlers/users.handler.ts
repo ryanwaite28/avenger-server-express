@@ -317,5 +317,21 @@ export class UsersRequestHandler {
     const serviceMethodResults: ServiceMethodResults = await UsersService.cancel_subscription(you);
     return response.status(serviceMethodResults.status).json(serviceMethodResults.info);
   }
+
+
+
+  static async check_user_follow(request: Request, response: Response): ExpressResponse {
+    const user_id: number = parseInt(request.params.id, 10);
+    const follow_id: number = parseInt(request.params.follow_id, 10);
+    const serviceMethodResults: ServiceMethodResults = await UsersService.check_user_follow(user_id, follow_id);
+    return response.status(serviceMethodResults.status).json(serviceMethodResults.info);
+  }
+
+  static async toggle_user_follow(request: Request, response: Response): ExpressResponse {
+    const you: IUser = response.locals.you;
+    const follow_id: number = parseInt(request.params.follow_id, 10);
+    const serviceMethodResults: ServiceMethodResults = await UsersService.toggle_user_follow(you.id, follow_id);
+    return response.status(serviceMethodResults.status).json(serviceMethodResults.info);
+  }
 }
 

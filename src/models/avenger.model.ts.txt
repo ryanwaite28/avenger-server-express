@@ -4,21 +4,22 @@ import {
   DATE, NOW,
   BOOLEAN,
   INTEGER,
-  Op, col, where, SyncOptions
+  UUIDV1, UUIDV4,
+  fn, Op, col, where, literal
 } from 'sequelize';
+import { STATUSES } from '../enums/common.enum';
 import { v4 as uuidv4 } from 'uuid';
 
 import { AVENGER_ADMIN_ROLES, AVENGER_SKILL_STATUS, INTERVIEW_VIEW_STATE, MODELS } from '../enums/avenger.enum';
 import { MyModelStatic } from '../interfaces/common.interface';
-import { createCommonGenericModelSocialModels } from './create-model-social-models.helper';
 import {
   sequelizeInst as sequelize,
-  common_model_fields,
   common_model_options,
+  common_model_fields,
   core_model_options,
-  DB_ENV,
 } from './_def.model';
-import { createChildCoreModels } from './_helper.model';
+
+
 
 
 
@@ -125,13 +126,139 @@ export const Tag = <MyModelStatic> sequelize.define('Tag', {
 
 
 
+/** Base/Common Tables */
+
+export const Analytic = <MyModelStatic> sequelize.define('Analytic', {
+  ...common_model_fields,
+  ...core_model_options,
+  
+  user_id:                   { type: INTEGER, allowNull: false, references: { model: User, key: 'id' } },
+  event:                     { type: TEXT, allowNull: true },
+}, common_model_options);
+
+export const Mention = <MyModelStatic> sequelize.define('Mention', {
+  ...common_model_fields,
+  ...core_model_options,
+
+  user_id:                   { type: INTEGER, allowNull: false, references: { model: User, key: 'id' } },
+  mentioned_id:              { type: INTEGER, allowNull: false, references: { model: User, key: 'id' } },
+}, common_model_options);
+
+export const Reaction = <MyModelStatic> sequelize.define('Reaction', {
+  ...common_model_fields,
+  ...core_model_options,
+
+  user_id:              { type: INTEGER, allowNull: false, references: { model: User, key: 'id' } },
+  reaction_type:        { type: STRING, allowNull: false, defaultValue: '' },
+}, common_model_options);
+
+export const Comment = <MyModelStatic> sequelize.define('Comment', {
+  ...common_model_fields,
+  ...core_model_options,
+
+  owner_id:             { type: INTEGER, allowNull: false, references: { model: User, key: 'id' } },
+  body:                 { type: TEXT, allowNull: false, defaultValue: '' },
+}, common_model_options);
+
+export const Reply = <MyModelStatic> sequelize.define('Reply', {
+  ...common_model_fields,
+  // reply depends on comment; no need for ...core_model_options,
+
+  owner_id:             { type: INTEGER, allowNull: false, references: { model: User, key: 'id' } },
+  comment_id:           { type: INTEGER, allowNull: false, references: { model: Comment, key: 'id' } },
+  body:                 { type: TEXT, allowNull: false, defaultValue: '' },
+}, common_model_options);
+
+export const Rating = <MyModelStatic> sequelize.define('Rating', {
+  ...common_model_fields,
+  ...core_model_options,
+
+  writer_id:            { type: INTEGER, allowNull: false, references: { model: User, key: 'id' } },
+  aspect:               { type: STRING, allowNull: true, defaultValue: true },
+  rating:               { type: INTEGER, allowNull: false, defaultValue: 5 },
+  title:                { type: STRING, allowNull: false, defaultValue: '' },
+  summary:              { type: TEXT, allowNull: false, defaultValue: '' },
+  image_link:           { type: STRING, allowNull: true, defaultValue: '' },
+  image_id:             { type: STRING, allowNull: true, defaultValue: '' },
+}, common_model_options);
+
+export const ContentSkill = <MyModelStatic> sequelize.define('ContentSkill', {
+  ...common_model_fields,
+  ...core_model_options,
+
+  skill_id:             { type: INTEGER, allowNull: false, references: { model: Skill, key: 'id' } },
+}, common_model_options);
+
+export const Photo = <MyModelStatic> sequelize.define('Photo', {
+  ...common_model_fields,
+  ...core_model_options,
+
+  photo_id:                  { type: TEXT, allowNull: true },
+  photo_link:                { type: TEXT, allowNull: true },
+  photo_bucket:              { type: TEXT, allowNull: true },
+  photo_key:                 { type: TEXT, allowNull: true },
+}, common_model_options);
+
+export const Video = <MyModelStatic> sequelize.define('Video', {
+  ...common_model_fields,
+  ...core_model_options,
+
+  video_id:                  { type: TEXT, allowNull: true },
+  video_link:                { type: TEXT, allowNull: true },
+  video_bucket:              { type: TEXT, allowNull: true },
+  video_key:                 { type: TEXT, allowNull: true },
+}, common_model_options);
+
+export const Audio = <MyModelStatic> sequelize.define('Audio', {
+  ...common_model_fields,
+
+  audio_id:                  { type: TEXT, allowNull: true },
+  audio_link:                { type: TEXT, allowNull: true },
+  audio_bucket:              { type: TEXT, allowNull: true },
+  audio_key:                 { type: TEXT, allowNull: true },
+}, common_model_options);
+
+export const Field = <MyModelStatic> sequelize.define('Field', {
+  ...common_model_fields,
+  ...core_model_options,
+
+  fieldname:            { type: STRING, allowNull: false, defaultValue: '' },
+  fieldvalue:           { type: STRING, allowNull: false, defaultValue: '' },
+}, common_model_options);
+
+export const ActionRequest = <MyModelStatic> sequelize.define('ActionRequest', {
+  ...common_model_fields,
+  ...core_model_options,
+  
+
+  from_id:              { type: INTEGER, allowNull: false, references: { model: User, key: 'id' } },
+  to_id:                { type: INTEGER, allowNull: false, references: { model: User, key: 'id' } },
+  action:               { type: STRING, allowNull: false },
+  status:               { type: STRING, allowNull: false, defaultValue: STATUSES.PENDING },
+}, common_model_options);
+
+export const Follow = <MyModelStatic> sequelize.define('Follow', {
+  ...common_model_fields,
+  ...core_model_options,
+
+  user_id:              { type: INTEGER, allowNull: false, references: { model: User, key: 'id' } },
+}, common_model_options);
+
+
+
+/** END Base/Common Tables */
+
+
+
+
+
 
 export const UserEmailVerification = <MyModelStatic> sequelize.define('UserEmailVerification', {
   ...common_model_fields,
 
   user_id:                 { type: INTEGER, allowNull: false, references: { model: User, key: 'id' } },
   email:                   { type: STRING, allowNull: false },
-  verification_code:       { type: STRING, allowNull: false, unique: true, defaultValue: uuidv4 },
+  verification_code:       { type: STRING, allowNull: false, unique: true, defaultValue: UUIDV4 },
   verified:                { type: BOOLEAN, allowNull: false, defaultValue: false },
 }, common_model_options);
 
@@ -184,7 +311,7 @@ export const UserResetPasswordRequest = <MyModelStatic> sequelize.define('UserRe
 
   user_id:             { type: INTEGER, allowNull: false, references: { model: User, key: 'id' } },
   completed:           { type: BOOLEAN, allowNull: false, defaultValue: false },
-  unique_value:        { type: STRING, allowNull: false, unique: true, defaultValue: uuidv4 },
+  unique_value:        { type: STRING, allowNull: false, unique: true, defaultValue: UUIDV4 },
 }, common_model_options);
 
 
@@ -314,8 +441,8 @@ export const Interview = <MyModelStatic> sequelize.define('Interview', {
   owner_id:                  { type: INTEGER, allowNull: false, references: { model: User, key: 'id' } },
   interviewer_id:            { type: INTEGER, allowNull: true, references: { model: User, key: 'id' } },
   interviewee_id:            { type: INTEGER, allowNull: true, references: { model: User, key: 'id' } },
-  title:                     { type: STRING, allowNull: true },
-  description:               { type: TEXT, allowNull: true },
+  title:                     { type: STRING, allowNull: false },
+  description:               { type: TEXT, allowNull: false, defaultValue: '' },
   industry:                  { type: TEXT, allowNull: true, defaultValue: '' },
   skills_accessed:           { type: TEXT, allowNull: false, defaultValue: '' },
   view_state:                { type: STRING, allowNull: false, defaultValue: INTERVIEW_VIEW_STATE.OPEN },
@@ -332,6 +459,7 @@ export const Interview = <MyModelStatic> sequelize.define('Interview', {
   video_bucket:              { type: TEXT, allowNull: true },
   video_key:                 { type: TEXT, allowNull: true },
 }, common_model_options);
+
 
 
 
@@ -465,90 +593,22 @@ export const NewsDataCache = <MyModelStatic> sequelize.define('NewsDataCache', {
 
 
 
-/** ------- DYNAMIC GENERATED MODELS ------- */
-
-
-export const UserCoreModels = createChildCoreModels({
-  userModel: User,
-  parentModelClass: User,
-  parentModelName: `User`,
-  childrenModelDefs: [
-    { childModelName: MODELS.RATING },
-    { childModelName: MODELS.FOLLOW },
-  ]
-});
-
-
-
-export const NoticeCoreModels = createChildCoreModels({
-  userModel: User,
-  parentModelClass: Notice,
-  parentModelName: `Notice`,
-  childrenModelDefs: [
-    { childModelName: MODELS.ANALYTIC },
-    { childModelName: MODELS.MENTION },
-    { childModelName: MODELS.REACTION },
-    { childModelName: MODELS.PHOTO },
-    { childModelName: MODELS.VIDEO },
-    { childModelName: MODELS.AUDIO },
-  ]
-});
-
-
-
-export const InterviewSocialModels = createCommonGenericModelSocialModels({
-  userModel: User,
-  parentModelClass: Interview,
-  parentModelName: `Interview`,
-});
-
-export const InterviewCoreModels = createChildCoreModels({
-  userModel: User,
-  parentModelClass: Interview,
-  parentModelName: `Interview`,
-  childrenModelDefs: [
-    { childModelName: MODELS.ANALYTIC },
-    { childModelName: MODELS.RATING },
-  ]
-});
-export const InterviewerCoreModels = createChildCoreModels({
-  userModel: User,
-  parentModelClass: Interview,
-  parentModelName: `Interviewer`,
-  foreignKey: `interview_id`,
-  childrenModelDefs: [
-    { childModelName: MODELS.RATING },
-  ]
-});
-export const IntervieweeCoreModels = createChildCoreModels({
-  userModel: User,
-  parentModelClass: Interview,
-  parentModelName: `Interviewee`,
-  foreignKey: `interview_id`,
-  childrenModelDefs: [
-    { childModelName: MODELS.RATING },
-  ]
-});
-
-export const QuestionSocialModels = createCommonGenericModelSocialModels({
-  userModel: User,
-  parentModelClass: Question,
-  parentModelName: `Question`,
-});
-
-export const AnswerSocialModels = createCommonGenericModelSocialModels({
-  userModel: User,
-  parentModelClass: Answer,
-  parentModelName: `Answer`,
-});
-
-
-
-
-
-
-
 /** ------- RELATIONSHIPS ------- */
+
+Comment.hasMany(Reply, { as: 'replies', foreignKey: 'comment_id', sourceKey: 'id' });
+Reply.belongsTo(Comment, { as: 'comment', foreignKey: 'comment_id', targetKey: 'id' });
+User.hasMany(Reply, { as: 'replies', foreignKey: 'owner_id', sourceKey: 'id' });
+Reply.belongsTo(User, { as: 'owner', foreignKey: 'owner_id', targetKey: 'id' });
+
+Comment.hasMany(Reaction, { as: 'reactions', foreignKey: 'target_id', sourceKey: 'id', scope: { [Op.and]: where(col("Reaction.target_type"), Op.eq, MODELS.COMMENT) } });
+Reaction.belongsTo(Reaction, { as: 'comment', foreignKey: 'target_id', targetKey: 'id', scope: { [Op.and]: where(col("Reaction.target_type"), Op.eq, MODELS.COMMENT) } });
+Reply.hasMany(Reaction, { as: 'reactions', foreignKey: 'target_id', sourceKey: 'id', scope: { [Op.and]: where(col("Reaction.target_type"), Op.eq, MODELS.REPLY) } });
+Reaction.belongsTo(Reply, { as: 'reply', foreignKey: 'target_id', targetKey: 'id', scope: { [Op.and]: where(col("Reaction.target_type"), Op.eq, MODELS.REPLY) } });
+
+Comment.hasMany(Analytic, { as: 'analytics', foreignKey: 'target_id', sourceKey: 'id', scope: { [Op.and]: where(col("Analytic.target_type"), Op.eq, MODELS.COMMENT) } });
+Analytic.belongsTo(Comment, { as: 'comment', foreignKey: 'target_id', targetKey: 'id', scope: { [Op.and]: where(col("Analytic.target_type"), Op.eq, MODELS.COMMENT) } });
+Reply.hasMany(Analytic, { as: 'analytics', foreignKey: 'target_id', sourceKey: 'id', scope: { [Op.and]: where(col("Analytic.target_type"), Op.eq, MODELS.REPLY) } });
+Analytic.belongsTo(Reply, { as: 'reply', foreignKey: 'target_id', targetKey: 'id', scope: { [Op.and]: where(col("Analytic.target_type"), Op.eq, MODELS.REPLY) } });
 
 
 
@@ -566,77 +626,59 @@ Message.belongsTo(User, { as: 'from', foreignKey: 'from_id', targetKey: 'id' });
 User.hasMany(Message, { as: 'messages_received', foreignKey: 'to_id', sourceKey: 'id' });
 Message.belongsTo(User, { as: 'to', foreignKey: 'to_id', targetKey: 'id' });
 
+User.hasMany(Analytic, { as: 'analytics', foreignKey: 'user_id', sourceKey: 'id' });
+Analytic.belongsTo(User, { as: 'user', foreignKey: 'user_id', targetKey: 'id' });
+
+
+
+// User ratings
+User.hasMany(Rating, { as: 'user_ratings_received', foreignKey: 'target_id', sourceKey: 'id', scope: { [Op.and]: where(col("Rating.target_type"), Op.eq, MODELS.USER) } });
+Rating.belongsTo(User, { as: 'rating_user', foreignKey: 'target_id', targetKey: 'id', scope: { [Op.and]: where(col("Rating.target_type"), Op.eq, MODELS.USER) } });
+User.hasMany(Rating, { as: 'user_ratings_written', foreignKey: 'writer_id', sourceKey: 'id', scope: { [Op.and]: where(col("Rating.target_type"), Op.eq, MODELS.USER) } });
+Rating.belongsTo(User, { as: 'writer_user', foreignKey: 'writer_id', targetKey: 'id', scope: { [Op.and]: where(col("Rating.target_type"), Op.eq, MODELS.USER) } });
+
 
 
 // Tags
 
-export const UserTags = <MyModelStatic> sequelize.define(`UserTags`, {}, common_model_options);
-Tag.belongsToMany(User, { through: UserTags, foreignKey: `tag_id` });
-User.belongsToMany(Tag, { through: UserTags, foreignKey: `user_id` });
+Tag.belongsToMany(User, { through: `UserTags` });
+User.belongsToMany(Tag, { through: `UserTags` });
 
-export const NoticeTags = <MyModelStatic> sequelize.define(`NoticeTags`, {}, common_model_options);
-Tag.belongsToMany(Notice, { through: NoticeTags, foreignKey: `tag_id` });
-Notice.belongsToMany(Tag, { through: NoticeTags, foreignKey: `notice_id` });
+Tag.belongsToMany(Rating, { through: `RatingTags` });
+Rating.belongsToMany(Tag, { through: `RatingTags` });
 
-export const InterviewTags = <MyModelStatic> sequelize.define(`InterviewTags`, {}, common_model_options);
-Tag.belongsToMany(Interview, { through: InterviewTags, foreignKey: `tag_id` });
-Interview.belongsToMany(Tag, { through: InterviewTags, foreignKey: `interview_id` });
+Tag.belongsToMany(Notice, { through: `NoticeTags` });
+Notice.belongsToMany(Tag, { through: `NoticeTags` });
 
-export const AssessmentTags = <MyModelStatic> sequelize.define(`AssessmentTags`, {}, common_model_options);
-Tag.belongsToMany(Assessment, { through: AssessmentTags, foreignKey: `tag_id` });
-Assessment.belongsToMany(Tag, { through: AssessmentTags, foreignKey: `assessment_id` });
+Tag.belongsToMany(Interview, { through: `InterviewTags` });
+Interview.belongsToMany(Tag, { through: `InterviewTags` });
 
-export const QuestionTags = <MyModelStatic> sequelize.define(`QuestionTags`, {}, common_model_options);
-Tag.belongsToMany(Question, { through: QuestionTags, foreignKey: `tag_id` });
-Question.belongsToMany(Tag, { through: QuestionTags, foreignKey: `question_id` });
+Tag.belongsToMany(Assessment, { through: `AssessmentTags` });
+Assessment.belongsToMany(Tag, { through: `AssessmentTags` });
 
-export const AnswerTags = <MyModelStatic> sequelize.define(`AnswerTags`, {}, common_model_options);
-Tag.belongsToMany(Answer, { through: AnswerTags, foreignKey: `tag_id` });
-Answer.belongsToMany(Tag, { through: AnswerTags, foreignKey: `answer_id` });
+Tag.belongsToMany(Question, { through: `QuestionTags` });
+Question.belongsToMany(Tag, { through: `QuestionTags` });
 
+Tag.belongsToMany(Answer, { through: `AnswerTags` });
+Answer.belongsToMany(Tag, { through: `AnswerTags` });
+
+Tag.belongsToMany(Comment, { through: `CommentTags` });
+Comment.belongsToMany(Tag, { through: `CommentTags` });
+
+Tag.belongsToMany(Reply, { through: `ReplyTags` });
+Reply.belongsToMany(Tag, { through: `ReplyTags` });
 
 
 // Skills
+Skill.hasMany(ContentSkill, { as: 'content_skills', foreignKey: 'skill_id', sourceKey: 'id' });
+ContentSkill.belongsTo(Skill, { as: 'skill', foreignKey: 'skill_id', targetKey: 'id' });
+User.hasMany(ContentSkill, { as: 'skills', foreignKey: 'target_id', sourceKey: 'id', scope: { [Op.and]: where(col("ContentSkill.target_type"), Op.eq, MODELS.USER) } });
+ContentSkill.belongsTo(User, { as: 'user', foreignKey: 'target_id', targetKey: 'id', scope: { [Op.and]: where(col("ContentSkill.target_type"), Op.eq, MODELS.USER) } });
 
-export const UserSkills = <MyModelStatic> sequelize.define(`UserSkills`, {}, common_model_options);
-Skill.belongsToMany(User, { as: 'skill_users', through: UserSkills, foreignKey: `skill_id` });
-User.belongsToMany(Skill, { as: 'user_skills', through: UserSkills, foreignKey: `user_id` });
-
-export const NoticeSkills = <MyModelStatic> sequelize.define(`NoticeSkills`, {}, common_model_options);
-Skill.belongsToMany(Notice, { through: NoticeSkills, foreignKey: `skill_id` });
-Notice.belongsToMany(Skill, { through: NoticeSkills, foreignKey: `notice_id` });
-
-NoticeSkills.hasOne(Notice, { as: 'notice', foreignKey: 'id', sourceKey: 'notice_id' });
-Notice.belongsTo(NoticeSkills, { as: 'notice_skill', foreignKey: 'id', targetKey: 'notice_id' });
-NoticeSkills.hasOne(Skill, { as: 'skill', foreignKey: 'id', sourceKey: 'skill_id' });
-Skill.belongsTo(NoticeSkills, { as: 'skill_notice', foreignKey: 'id', targetKey: 'skill_id' });
-
-
-
-export const InterviewSkills = <MyModelStatic> sequelize.define(`InterviewSkills`, {}, common_model_options);
-Skill.belongsToMany(Interview, { through: InterviewSkills, foreignKey: `skill_id` });
-Interview.belongsToMany(Skill, { through: InterviewSkills, foreignKey: `interview_id` });
-
-InterviewSkills.hasOne(Interview, { as: 'interview', foreignKey: 'id', sourceKey: 'interview_id' });
-Interview.belongsTo(InterviewSkills, { as: 'interview_skill', foreignKey: 'id', targetKey: 'interview_id' });
-InterviewSkills.hasOne(Skill, { as: 'skill', foreignKey: 'id', sourceKey: 'skill_id' });
-Skill.belongsTo(InterviewSkills, { as: 'skill_inteview', foreignKey: 'id', targetKey: 'skill_id' });
-
-
-
-export const AssessmentSkills = <MyModelStatic> sequelize.define(`AssessmentSkills`, {}, common_model_options);
-Skill.belongsToMany(Assessment, { through: AssessmentSkills, foreignKey: `skill_id` });
-Assessment.belongsToMany(Skill, { through: AssessmentSkills, foreignKey: `assessment_id` });
-
-export const QuestionSkills = <MyModelStatic> sequelize.define(`QuestionSkills`, {}, common_model_options);
-Skill.belongsToMany(Question, { through: QuestionSkills, foreignKey: `skill_id` });
-Question.belongsToMany(Skill, { through: QuestionSkills, foreignKey: `question_id` });
-
-export const AnswerSkills = <MyModelStatic> sequelize.define(`AnswerSkills`, {}, common_model_options);
-Skill.belongsToMany(Answer, { through: AnswerSkills, foreignKey: `skill_id` });
-Answer.belongsToMany(Skill, { through: AnswerSkills, foreignKey: `answer_id` });
-
-
+ContentSkill.hasMany(Rating, { as: 'content_skill_ratings', foreignKey: 'target_id', sourceKey: 'id', scope: { [Op.and]: where(col("Rating.target_type"), Op.eq, MODELS.CONTENT_SKILL) } });
+Rating.belongsTo(ContentSkill, { as: 'content_skill', foreignKey: 'target_id', targetKey: 'id', scope: { [Op.and]: where(col("Rating.target_type"), Op.eq, MODELS.CONTENT_SKILL) } });
+User.hasMany(Rating, { as: 'skill_ratings_written', foreignKey: 'writer_id', sourceKey: 'id', scope: { [Op.and]: where(col("Rating.target_type"), Op.eq, MODELS.CONTENT_SKILL) } });
+Rating.belongsTo(User, { as: 'writer_content_skill', foreignKey: 'writer_id', targetKey: 'id', scope: { [Op.and]: where(col("Rating.target_type"), Op.eq, MODELS.CONTENT_SKILL) } });
 
 
 
@@ -652,6 +694,24 @@ Notice.belongsTo(Notice, { as: 'quote_notice', foreignKey: 'quoting_notice_id', 
 Notice.hasMany(Notice, { as: 'notice_shares', foreignKey: 'share_notice_id', sourceKey: 'id' });
 Notice.belongsTo(Notice, { as: 'share_notice', foreignKey: 'share_notice_id', targetKey: 'id' });
 
+Notice.hasMany(Photo, { as: 'notice_photos', foreignKey: 'target_id', sourceKey: 'id', scope: { [Op.and]: where(col("Photo.target_type"), Op.eq, MODELS.NOTICE) } });
+Photo.belongsTo(Notice, { as: 'notice', foreignKey: 'target_id', targetKey: 'id', scope: { [Op.and]: where(col("Photo.target_type"), Op.eq, MODELS.NOTICE) } });
+Notice.hasMany(Video, { as: 'notice_videos', foreignKey: 'target_id', sourceKey: 'id', scope: { [Op.and]: where(col("Video.target_type"), Op.eq, MODELS.NOTICE) } });
+Video.belongsTo(Notice, { as: 'notice', foreignKey: 'target_id', targetKey: 'id', scope: { [Op.and]: where(col("Video.target_type"), Op.eq, MODELS.NOTICE) } });
+Notice.hasMany(Audio, { as: 'notice_audios', foreignKey: 'target_id', sourceKey: 'id', scope: { [Op.and]: where(col("Audio.target_type"), Op.eq, MODELS.NOTICE) } });
+Audio.belongsTo(Notice, { as: 'notice', foreignKey: 'target_id', targetKey: 'id', scope: { [Op.and]: where(col("Audio.target_type"), Op.eq, MODELS.NOTICE) } });
+
+Notice.hasMany(Analytic, { as: 'analytics', foreignKey: 'target_id', sourceKey: 'id', scope: { [Op.and]: where(col("Analytic.target_type"), Op.eq, MODELS.NOTICE) } });
+Analytic.belongsTo(Notice, { as: 'notice', foreignKey: 'target_id', targetKey: 'id', scope: { [Op.and]: where(col("Analytic.target_type"), Op.eq, MODELS.NOTICE) } });
+
+Notice.hasMany(Reaction, { as: 'reactions', foreignKey: 'target_id', sourceKey: 'id', scope: { [Op.and]: where(col("Reaction.target_type"), Op.eq, MODELS.NOTICE) } });
+Reaction.belongsTo(Notice, { as: 'notice', foreignKey: 'target_id', targetKey: 'id', scope: { [Op.and]: where(col("Reaction.target_type"), Op.eq, MODELS.NOTICE) } });
+User.hasMany(Reaction, { as: 'notice_reactions', foreignKey: 'user_id', sourceKey: 'id', scope: { [Op.and]: where(col("Reaction.target_type"), Op.eq, MODELS.NOTICE) } });
+Reaction.belongsTo(User, { as: 'notice_reaction_user', foreignKey: 'user_id', targetKey: 'id', scope: { [Op.and]: where(col("Reaction.target_type"), Op.eq, MODELS.NOTICE) } });
+
+Notice.hasMany(ContentSkill, { as: 'skills', foreignKey: 'target_id', sourceKey: 'id', scope: { [Op.and]: where(col("ContentSkill.target_type"), Op.eq, MODELS.NOTICE) } });
+ContentSkill.belongsTo(Notice, { as: 'notice', foreignKey: 'target_id', targetKey: 'id', scope: { [Op.and]: where(col("ContentSkill.target_type"), Op.eq, MODELS.NOTICE) } });
+
 
 
 
@@ -659,15 +719,32 @@ Notice.belongsTo(Notice, { as: 'share_notice', foreignKey: 'share_notice_id', ta
 // Interview
 User.hasMany(Interview, { as: 'interviews', foreignKey: 'owner_id', sourceKey: 'id' });
 Interview.belongsTo(User, { as: 'owner', foreignKey: 'owner_id', targetKey: 'id' });
+
+User.hasMany(Comment, { as: 'user_interview_comments', foreignKey: 'owner_id', sourceKey: 'id', scope: { [Op.and]: where(col("Comment.target_type"), Op.eq, MODELS.INTERVIEW) } });
+Comment.belongsTo(User, { as: 'interview_comment_owner', foreignKey: 'owner_id', targetKey: 'id', scope: { [Op.and]: where(col("Comment.target_type"), Op.eq, MODELS.INTERVIEW) } });
+Interview.hasMany(Comment, { as: 'comments', foreignKey: 'target_id', sourceKey: 'id', scope: { [Op.and]: where(col("Comment.target_type"), Op.eq, MODELS.INTERVIEW) } });
+Comment.belongsTo(Interview, { as: 'interview', foreignKey: 'target_id', targetKey: 'id', scope: { [Op.and]: where(col("Comment.target_type"), Op.eq, MODELS.INTERVIEW) } });
+
+Interview.hasMany(Analytic, { as: 'analytics', foreignKey: 'target_id', sourceKey: 'id', scope: { [Op.and]: where(col("Analytic.target_type"), Op.eq, MODELS.INTERVIEW) } });
+Analytic.belongsTo(Interview, { as: 'interview', foreignKey: 'target_id', targetKey: 'id', scope: { [Op.and]: where(col("Analytic.target_type"), Op.eq, MODELS.INTERVIEW) } });
+
+Interview.hasMany(Reaction, { as: 'reactions', foreignKey: 'target_id', sourceKey: 'id', scope: { [Op.and]: where(col("Reaction.target_type"), Op.eq, MODELS.INTERVIEW) } });
+Reaction.belongsTo(Interview, { as: 'interview', foreignKey: 'target_id', targetKey: 'id', scope: { [Op.and]: where(col("Reaction.target_type"), Op.eq, MODELS.INTERVIEW) } });
+User.hasMany(Reaction, { as: 'interview_reactions', foreignKey: 'user_id', sourceKey: 'id', scope: { [Op.and]: where(col("Reaction.target_type"), Op.eq, MODELS.INTERVIEW) } });
+Reaction.belongsTo(User, { as: 'interview_reaction_user', foreignKey: 'user_id', targetKey: 'id', scope: { [Op.and]: where(col("Reaction.target_type"), Op.eq, MODELS.INTERVIEW) } });
+
 User.hasMany(Interview, { as: 'interviews_interviewer', foreignKey: 'interviewer_id', sourceKey: 'id' });
 Interview.belongsTo(User, { as: 'interviewer', foreignKey: 'interviewer_id', targetKey: 'id' });
 User.hasMany(Interview, { as: 'interviews_interviewee', foreignKey: 'interviewee_id', sourceKey: 'id' });
 Interview.belongsTo(User, { as: 'interviewee', foreignKey: 'interviewee_id', targetKey: 'id' });
+
+Interview.hasMany(ContentSkill, { as: 'skills', foreignKey: 'target_id', sourceKey: 'id', scope: { [Op.and]: where(col("ContentSkill.target_type"), Op.eq, MODELS.INTERVIEW) } });
+ContentSkill.belongsTo(Interview, { as: 'interview', foreignKey: 'target_id', targetKey: 'id', scope: { [Op.and]: where(col("ContentSkill.target_type"), Op.eq, MODELS.INTERVIEW) } });
+
 
 
 
 // Question / Answer
 User.hasMany(Question, { as: 'questions', foreignKey: 'owner_id', sourceKey: 'id' });
 Question.belongsTo(User, { as: 'owner', foreignKey: 'owner_id', targetKey: 'id' });
-
 

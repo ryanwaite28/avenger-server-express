@@ -259,6 +259,10 @@ export function AuthorizeJWT(
 
 
 export const create_model_crud_repo_from_model_class = <T> (givenModelClass: MyModelStatic) => {
+  // console.log({ givenModelClass });
+  if (!givenModelClass) {
+    throw new Error(`Model is required...`);
+  }
 
   const convertTypeCurry = convertModelCurry<T>();
   const convertTypeListCurry = convertModelsCurry<T>();
@@ -266,6 +270,10 @@ export const create_model_crud_repo_from_model_class = <T> (givenModelClass: MyM
 
   const create = (createObj: any, createOptions?: CreateOptions) => {
     return modelClass.create(createObj, createOptions).then(convertTypeCurry);
+  };
+
+  const count = (findOptions: FindOptions) => {
+    return modelClass.count(findOptions);
   };
 
 
@@ -286,11 +294,12 @@ export const create_model_crud_repo_from_model_class = <T> (givenModelClass: MyM
 
 
   const update = (updateObj: any, options: UpdateOptions) => {
-    const results = modelClass.update(updateObj, options);
-    return (results as any) as Promise<[number, (T | null)[]]>;
+    return modelClass.update(updateObj, { ...options, returning: true })
+      .then((updates) => ({ rows: updates[0], models: updates[1].map(convertTypeCurry) }));
   };
   const updateById = (id: number, updateObj: any) => {
-    return modelClass.update(updateObj, { where: { id }, returning: true });
+    return modelClass.update(updateObj, { where: { id }, returning: true })
+      .then((updates) => ({ rows: updates[0], model: updates[1][0] && convertTypeCurry(updates[1][0]) }));
     // .then(async (updates) => {
     //   const fresh = await findById(id);
     //   // return updates;
@@ -301,13 +310,15 @@ export const create_model_crud_repo_from_model_class = <T> (givenModelClass: MyM
 
 
 
-  const deleteFn = (destroyOptions: DestroyOptions) => {
-    const results = modelClass.destroy(destroyOptions);
-    return results;
+  const deleteFn = async (destroyOptions: DestroyOptions) => {
+    const results = await modelClass.destroy(destroyOptions);
+    const models = !destroyOptions.where ? [] : await modelClass.findAll({ where: destroyOptions.where, paranoid: false }).then(convertTypeListCurry);
+    return { results, models };
   };
-  const deleteById = (id: number) => {
-    const results = modelClass.destroy({ where: { id } });
-    return results;
+  const deleteById = async (id: number) => {
+    const results = await modelClass.destroy({ where: { id } });
+    const model = await modelClass.findOne({ where: { id }, paranoid: false }).then(convertTypeCurry);
+    return { results, model };
   };
 
 
@@ -327,10 +338,12 @@ export const create_model_crud_repo_from_model_class = <T> (givenModelClass: MyM
     findOne,
     findAll,
     findById,
+    count,
 
     update,
     updateById,
 
+    destroy: deleteFn,
     delete: deleteFn,
     deleteById,
 

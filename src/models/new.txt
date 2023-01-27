@@ -1,0 +1,703 @@
+import * as Sequelize from 'sequelize';
+import { STATUSES } from '../enums/common.enum';
+import { v4 as uuidv4 } from 'uuid';
+
+import { AVENGER_ADMIN_ROLES, AVENGER_SKILL_STATUS, INTERVIEW_VIEW_STATE } from '../enums/avenger.enum';
+import { MyModelStatic } from '../interfaces/common.interface';
+import {
+  common_model_options,
+  common_model_fields,
+  sequelizeInst as sequelize
+} from './_def.model';
+
+
+
+
+
+const core_model_options = {
+  target_type:               { type: Sequelize.TEXT, allowNull: false, unique: 'target_model' },
+  target_id:                 { type: Sequelize.INTEGER, allowNull: false, unique: 'target_model' },
+  metadata:                  { type: Sequelize.JSON, allowNull: true },
+};
+
+
+
+
+/** admin models */
+
+export const Admin = <MyModelStatic> sequelize.define('Admin', {
+  ...common_model_fields,
+
+  firstname:           { type: Sequelize.STRING, allowNull: false, defaultValue: '' },
+  middlename:          { type: Sequelize.STRING, allowNull: false, defaultValue: '' },
+  lastname:            { type: Sequelize.STRING, allowNull: false, defaultValue: '' },
+  icon_link:           { type: Sequelize.STRING, allowNull: true, defaultValue: '' },
+  icon_id:             { type: Sequelize.STRING, allowNull: true, defaultValue: '' },
+  email:               { type: Sequelize.STRING, allowNull: false },
+  password:            { type: Sequelize.STRING, allowNull: false },
+  phone:               { type: Sequelize.STRING, allowNull: true },
+  role:                { type: Sequelize.STRING, allowNull: false, defaultValue: AVENGER_ADMIN_ROLES.ADMINISTRATOR },
+  active:              { type: Sequelize.BOOLEAN, allowNull: false, defaultValue: true },
+}, common_model_options);
+
+
+/** END admin models */
+
+
+
+/** user model */
+
+export const User = <MyModelStatic> sequelize.define('User', {
+  ...common_model_fields,
+
+  username:                            { type: Sequelize.STRING, allowNull: false },
+  displayname:                         { type: Sequelize.STRING, allowNull: false, defaultValue: '' },
+  email:                               { type: Sequelize.STRING, allowNull: false },
+  password:                            { type: Sequelize.STRING, allowNull: false },
+  
+  phone:                               { type: Sequelize.STRING, allowNull: true, defaultValue: null },
+  temp_phone:                          { type: Sequelize.STRING, allowNull: true, defaultValue: null },
+  stripe_customer_account_id:          { type: Sequelize.STRING, allowNull: true, defaultValue: null },
+  stripe_account_id:                   { type: Sequelize.STRING, allowNull: true, defaultValue: null },
+  stripe_account_verified:             { type: Sequelize.BOOLEAN, allowNull: false, defaultValue: false },
+  platform_subscription_id:            { type: Sequelize.STRING, allowNull: true, defaultValue: null },
+
+  headline:                            { type: Sequelize.STRING, allowNull: false, defaultValue: '' },
+  bio:                                 { type: Sequelize.TEXT, allowNull: false, defaultValue: '' },
+  tags:                                { type: Sequelize.STRING, allowNull: false, defaultValue: '' },
+  icon_link:                           { type: Sequelize.STRING, allowNull: true, defaultValue: '' },
+  icon_id:                             { type: Sequelize.STRING, allowNull: true, defaultValue: '' },
+
+  id_card_front_link:                  { type: Sequelize.STRING, allowNull: true, defaultValue: '' },
+  id_card_front_id:                    { type: Sequelize.STRING, allowNull: true, defaultValue: '' },
+  id_card_back_link:                   { type: Sequelize.STRING, allowNull: true, defaultValue: '' },
+  id_card_back_id:                     { type: Sequelize.STRING, allowNull: true, defaultValue: '' },
+
+  photo_id_link:                       { type: Sequelize.STRING, allowNull: true, defaultValue: '' },
+  photo_id_id:                         { type: Sequelize.STRING, allowNull: true, defaultValue: '' },
+  wallpaper_link:                      { type: Sequelize.STRING, allowNull: true, defaultValue: '' },
+  wallpaper_id:                        { type: Sequelize.STRING, allowNull: true, defaultValue: '' },
+  
+  allow_messaging:                     { type: Sequelize.BOOLEAN, allowNull: false, defaultValue: true },
+  allow_conversations:                 { type: Sequelize.BOOLEAN, allowNull: false, defaultValue: true },
+  pinned_notice_id:                    { type: Sequelize.INTEGER, allowNull: true },
+  
+  location:                            { type: Sequelize.STRING, allowNull: true, defaultValue: '' },
+  location_id:                         { type: Sequelize.STRING, allowNull: true, defaultValue: '' },
+  location_json:                       { type: Sequelize.JSON, allowNull: true, defaultValue: '' },
+  zipcode:                             { type: Sequelize.STRING, allowNull: true, defaultValue: '' },
+  city:                                { type: Sequelize.STRING, allowNull: true, defaultValue: '' },
+  state:                               { type: Sequelize.STRING, allowNull: true, defaultValue: '' },
+  county:                              { type: Sequelize.STRING, allowNull: true, defaultValue: '' },
+  country:                             { type: Sequelize.STRING, allowNull: true, defaultValue: '' },
+
+  public:                              { type: Sequelize.BOOLEAN, allowNull: false, defaultValue: true },
+  online:                              { type: Sequelize.BOOLEAN, allowNull: false, defaultValue: false },
+  cerified:                            { type: Sequelize.BOOLEAN, allowNull: false, defaultValue: false },
+  person_verified:                     { type: Sequelize.BOOLEAN, allowNull: false, defaultValue: false },
+  email_verified:                      { type: Sequelize.BOOLEAN, allowNull: false, defaultValue: false },
+  phone_verified:                      { type: Sequelize.BOOLEAN, allowNull: false, defaultValue: false },
+  can_message:                         { type: Sequelize.BOOLEAN, allowNull: false, defaultValue: true },
+  can_converse:                        { type: Sequelize.BOOLEAN, allowNull: false, defaultValue: true },
+  allow_skill_submissions:             { type: Sequelize.BOOLEAN, allowNull: false, defaultValue: true },
+  notifications_last_opened:           { type: Sequelize.DATE, allowNull: false, defaultValue: Sequelize.NOW },
+}, common_model_options);
+
+export const Skill = <MyModelStatic> sequelize.define('Skill', {
+  ...common_model_fields,
+
+  name:                 { type: Sequelize.STRING, allowNull: false, unique: true },
+  status:               { type: Sequelize.STRING, allowNull: false, defaultValue: AVENGER_SKILL_STATUS.ACTIVE },
+}, common_model_options);
+
+export const Tag = <MyModelStatic> sequelize.define('Tag', {
+  ...common_model_fields,
+
+  name:                 { type: Sequelize.STRING, allowNull: false, unique: true },
+  status:               { type: Sequelize.STRING, allowNull: false, defaultValue: AVENGER_SKILL_STATUS.ACTIVE },
+}, common_model_options);
+
+
+/** END user model */
+
+
+
+
+/** Base/Common Tables */
+
+export const Analytic = <MyModelStatic> sequelize.define('Analytic', {
+  ...common_model_fields,
+  ...core_model_options,
+  
+  user_id:                   { type: Sequelize.INTEGER, allowNull: false, references: { model: User, key: 'id' } },
+  event:                     { type: Sequelize.TEXT, allowNull: true },
+}, common_model_options);
+
+export const Mention = <MyModelStatic> sequelize.define('Mention', {
+  ...common_model_fields,
+  ...core_model_options,
+
+  user_id:                   { type: Sequelize.INTEGER, allowNull: false, references: { model: User, key: 'id' } },
+  mentioned_id:              { type: Sequelize.INTEGER, allowNull: false, references: { model: User, key: 'id' } },
+}, common_model_options);
+
+export const Reaction = <MyModelStatic> sequelize.define('Reaction', {
+  ...common_model_fields,
+  ...core_model_options,
+
+  user_id:              { type: Sequelize.INTEGER, allowNull: false, references: { model: User, key: 'id' } },
+  reaction_type:                 { type: Sequelize.STRING, allowNull: false, defaultValue: '' },
+}, common_model_options);
+
+export const Comment = <MyModelStatic> sequelize.define('Comment', {
+  ...common_model_fields,
+  ...core_model_options,
+
+  owner_id:             { type: Sequelize.INTEGER, allowNull: false, references: { model: User, key: 'id' } },
+  body:                 { type: Sequelize.TEXT, allowNull: false, defaultValue: '' },
+}, common_model_options);
+
+export const Reply = <MyModelStatic> sequelize.define('Reply', {
+  ...common_model_fields,
+  // reply depends on comment; no need for ...core_model_options,
+
+  owner_id:             { type: Sequelize.INTEGER, allowNull: false, references: { model: User, key: 'id' } },
+  comment_id:           { type: Sequelize.INTEGER, allowNull: false, references: { model: Comment, key: 'id' } },
+  body:                 { type: Sequelize.TEXT, allowNull: false, defaultValue: '' },
+}, common_model_options);
+
+export const Rating = <MyModelStatic> sequelize.define('Rating', {
+  ...common_model_fields,
+  ...core_model_options,
+
+  writer_id:            { type: Sequelize.INTEGER, allowNull: false, references: { model: User, key: 'id' } },
+  aspect:               { type: Sequelize.STRING, allowNull: true, defaultValue: true },
+  rating:               { type: Sequelize.INTEGER, allowNull: false, defaultValue: 5 },
+  title:                { type: Sequelize.STRING, allowNull: false, defaultValue: '' },
+  summary:              { type: Sequelize.TEXT, allowNull: false, defaultValue: '' },
+  tags:                 { type: Sequelize.TEXT, allowNull: false, defaultValue: '' },
+  image_link:           { type: Sequelize.STRING, allowNull: true, defaultValue: '' },
+  image_id:             { type: Sequelize.STRING, allowNull: true, defaultValue: '' },
+}, common_model_options);
+
+export const ContentSkill = <MyModelStatic> sequelize.define('ContentSkill', {
+  ...common_model_fields,
+  ...core_model_options,
+
+  skill_id:             { type: Sequelize.INTEGER, allowNull: false, references: { model: Skill, key: 'id' } },
+}, common_model_options);
+
+export const Photo = <MyModelStatic> sequelize.define('Photo', {
+  ...common_model_fields,
+  ...core_model_options,
+
+  photo_id:                  { type: Sequelize.TEXT, allowNull: true },
+  photo_link:                { type: Sequelize.TEXT, allowNull: true },
+  photo_bucket:              { type: Sequelize.TEXT, allowNull: true },
+  photo_key:                 { type: Sequelize.TEXT, allowNull: true },
+}, common_model_options);
+
+export const Video = <MyModelStatic> sequelize.define('Video', {
+  ...common_model_fields,
+  ...core_model_options,
+
+  video_id:                  { type: Sequelize.TEXT, allowNull: true },
+  video_link:                { type: Sequelize.TEXT, allowNull: true },
+  video_bucket:              { type: Sequelize.TEXT, allowNull: true },
+  video_key:                 { type: Sequelize.TEXT, allowNull: true },
+}, common_model_options);
+
+export const Audio = <MyModelStatic> sequelize.define('Audio', {
+  ...common_model_fields,
+
+  audio_id:                  { type: Sequelize.TEXT, allowNull: true },
+  audio_link:                { type: Sequelize.TEXT, allowNull: true },
+  audio_bucket:              { type: Sequelize.TEXT, allowNull: true },
+  audio_key:                 { type: Sequelize.TEXT, allowNull: true },
+}, common_model_options);
+
+export const Field = <MyModelStatic> sequelize.define('Field', {
+  ...common_model_fields,
+  ...core_model_options,
+
+  fieldname:            { type: Sequelize.STRING, allowNull: false, defaultValue: '' },
+  fieldvalue:           { type: Sequelize.STRING, allowNull: false, defaultValue: '' },
+}, common_model_options);
+
+export const ActionRequest = <MyModelStatic> sequelize.define('ActionRequest', {
+  ...common_model_fields,
+  ...core_model_options,
+  
+
+  from_id:              { type: Sequelize.INTEGER, allowNull: false, references: { model: User, key: 'id' } },
+  to_id:                { type: Sequelize.INTEGER, allowNull: false, references: { model: User, key: 'id' } },
+  action:               { type: Sequelize.STRING, allowNull: false },
+  status:               { type: Sequelize.STRING, allowNull: false, defaultValue: STATUSES.PENDING },
+}, common_model_options);
+
+export const Follow = <MyModelStatic> sequelize.define('Follow', {
+  ...common_model_fields,
+  ...core_model_options,
+
+  user_id:              { type: Sequelize.INTEGER, allowNull: false, references: { model: User, key: 'id' } },
+}, common_model_options);
+
+
+
+/** END Base/Common Tables */
+
+
+
+
+
+
+export const UserEmailVerification = <MyModelStatic> sequelize.define('UserEmailVerification', {
+  ...common_model_fields,
+
+  user_id:                 { type: Sequelize.INTEGER, allowNull: false, references: { model: User, key: 'id' } },
+  email:                   { type: Sequelize.STRING, allowNull: false },
+  verification_code:       { type: Sequelize.STRING, allowNull: false, unique: true, defaultValue: Sequelize.UUIDV4 },
+  verified:                { type: Sequelize.BOOLEAN, allowNull: false, defaultValue: false },
+}, common_model_options);
+
+
+
+
+export const UserPhoneVerification = <MyModelStatic> sequelize.define('UserPhoneVerification', {
+  ...common_model_fields,
+
+  user_id:                 { type: Sequelize.INTEGER, allowNull: false, references: { model: User, key: 'id' } },
+  request_id:              { type: Sequelize.STRING, allowNull: false, unique: true },
+  phone:                   { type: Sequelize.STRING, allowNull: false },
+  verification_code:       { type: Sequelize.STRING, allowNull: false },
+  verified:                { type: Sequelize.BOOLEAN, allowNull: false, defaultValue: false },
+}, common_model_options);
+
+
+
+
+export const UserExpoDevice = <MyModelStatic> sequelize.define('UserExpoDevice', {
+  ...common_model_fields,
+
+  user_id:              { type: Sequelize.INTEGER, allowNull: false, references: { model: User, key: 'id' } },
+  token:                { type: Sequelize.STRING, allowNull: false, defaultValue: '' },
+  device_info:          { type: Sequelize.JSON, allowNull: true, defaultValue: null },
+  device_id:            { type: Sequelize.STRING, allowNull: false, defaultValue: '' },
+  device_reaction_type:          { type: Sequelize.STRING, allowNull: false, defaultValue: '' },
+  device_platform:      { type: Sequelize.STRING, allowNull: false, defaultValue: '' },
+}, common_model_options);
+
+
+
+
+export const UserDevice = <MyModelStatic> sequelize.define('UserDevice', {
+  ...common_model_fields,
+
+  user_id:              { type: Sequelize.INTEGER, allowNull: false, references: { model: User, key: 'id' } },
+  token:                { type: Sequelize.STRING, allowNull: false, defaultValue: '' },
+  device_info:          { type: Sequelize.JSON, allowNull: true, defaultValue: null },
+  device_id:            { type: Sequelize.STRING, allowNull: false, defaultValue: '' },
+  device_reaction_type:          { type: Sequelize.STRING, allowNull: false, defaultValue: '' },
+  device_platform:      { type: Sequelize.STRING, allowNull: false, defaultValue: '' },
+}, common_model_options);
+
+
+
+
+export const UserResetPasswordRequest = <MyModelStatic> sequelize.define('UserResetPasswordRequest', {
+  ...common_model_fields,
+
+  user_id:             { type: Sequelize.INTEGER, allowNull: false, references: { model: User, key: 'id' } },
+  completed:           { type: Sequelize.BOOLEAN, allowNull: false, defaultValue: false },
+  unique_value:        { type: Sequelize.STRING, allowNull: false, unique: true, defaultValue: Sequelize.UUIDV4 },
+}, common_model_options);
+
+
+
+
+export const UserFollow = <MyModelStatic> sequelize.define('UserFollow', {
+  ...common_model_fields,
+
+  user_id:              { type: Sequelize.INTEGER, allowNull: false, references: { model: User, key: 'id' } },
+  follow_id:            { type: Sequelize.INTEGER, allowNull: false, references: { model: User, key: 'id' } },
+}, common_model_options);
+
+
+
+
+export const UserNotification = <MyModelStatic> sequelize.define('UserNotification', {
+  ...common_model_fields,
+
+  from_id:             { type: Sequelize.INTEGER, allowNull: false, references: { model: User, key: 'id' } },
+  to_id:               { type: Sequelize.INTEGER, allowNull: false, references: { model: User, key: 'id' } },
+  event:               { type: Sequelize.STRING, allowNull: false, defaultValue: '' },
+  target_type:         { type: Sequelize.STRING, allowNull: false, defaultValue: '' },
+  target_id:           { type: Sequelize.INTEGER, allowNull: false, defaultValue: 0 },
+  read:                { type: Sequelize.BOOLEAN, allowNull: false, defaultValue: false },
+  image_link:          { type: Sequelize.TEXT, allowNull: true, defaultValue: '' },
+  image_id:            { type: Sequelize.TEXT, allowNull: true, defaultValue: '' },
+}, common_model_options);
+
+
+
+
+export const UserUserNotificationLastOpened = <MyModelStatic> sequelize.define('UserUserNotificationLastOpened', {
+  ...common_model_fields,
+
+  user_id:                             { type: Sequelize.INTEGER, allowNull: false, references: { model: User, key: 'id' } },
+  notifications_last_opened:           { type: Sequelize.DATE, allowNull: false, defaultValue: Sequelize.NOW },
+}, common_model_options);
+
+
+
+
+export const UserAccountHold = <MyModelStatic> sequelize.define('UserAccountHold', {
+  ...common_model_fields,
+
+  user_id:                             { type: Sequelize.INTEGER, allowNull: false, references: { model: User, key: 'id' } },
+  status:                              { type: Sequelize.STRING, allowNull: false, defaultValue: '' },
+  reason:                              { type: Sequelize.STRING, allowNull: false, defaultValue: '' },
+}, common_model_options);
+
+
+
+
+export const MessagingRequest = <MyModelStatic> sequelize.define('MessagingRequest', {
+  ...common_model_fields,
+
+  user_id:            { type: Sequelize.INTEGER, allowNull: false, references: { model: User, key: 'id' } },
+  sender_id:          { type: Sequelize.INTEGER, allowNull: false, references: { model: User, key: 'id' } },
+}, common_model_options);
+
+
+
+
+export const Messaging = <MyModelStatic> sequelize.define('Messaging', {
+  ...common_model_fields,
+
+  user_id:            { type: Sequelize.INTEGER, allowNull: false, references: { model: User, key: 'id' } },
+  sender_id:          { type: Sequelize.INTEGER, allowNull: false, references: { model: User, key: 'id' } },
+}, common_model_options);
+
+
+
+export const Message = <MyModelStatic> sequelize.define('Message', {
+  ...common_model_fields,
+
+  from_id:            { type: Sequelize.INTEGER, allowNull: false, references: { model: User, key: 'id' } },
+  to_id:              { type: Sequelize.INTEGER, allowNull: false, references: { model: User, key: 'id' } },
+  body:               { type: Sequelize.TEXT, allowNull: false },
+  opened:             { type: Sequelize.BOOLEAN, allowNull: false, defaultValue: false },
+}, common_model_options);
+
+
+
+
+/** stripe models */
+
+export const StripeAction = <MyModelStatic> sequelize.define('StripeAction', {
+  ...common_model_fields,
+
+  user_id:                             { type: Sequelize.INTEGER, allowNull: true, references: { model: User, key: 'id' } },
+  action_event:                        { type: Sequelize.STRING, allowNull: false }, // charge, refund, transfer
+  action_id:                           { type: Sequelize.STRING, allowNull: false },
+  action_metadata:                     { type: Sequelize.JSON, allowNull: true, defaultValue: '' },
+  target_reaction_type:                         { type: Sequelize.STRING, allowNull: true, defaultValue: '' },
+  target_id:                           { type: Sequelize.INTEGER, allowNull: true, defaultValue: 0 },
+  target_metadata:                     { type: Sequelize.JSON, allowNull: true, defaultValue: '' },
+  status:                              { type: Sequelize.STRING, allowNull: false, defaultValue: '' },
+}, common_model_options);
+
+
+
+
+
+
+/** user notices (tweets) */
+
+export const Notice = <MyModelStatic> sequelize.define('Notice', {
+  ...common_model_fields,
+
+  owner_id:            { type: Sequelize.INTEGER, allowNull: false, references: { model: User, key: 'id' } },
+
+  pinned_reply_id:     { type: Sequelize.INTEGER, allowNull: true, references: { model: 'Notice', key: 'id' } },
+  parent_notice_id:    { type: Sequelize.INTEGER, allowNull: true, references: { model: 'Notice', key: 'id' } }, // if this notice is a reply to another
+  quoting_notice_id:   { type: Sequelize.INTEGER, allowNull: true, references: { model: 'Notice', key: 'id' } }, // if this notice is quoting another
+  share_notice_id:     { type: Sequelize.INTEGER, allowNull: true, references: { model: 'Notice', key: 'id' } }, // if this notice is a share of another
+
+  body:                { type: Sequelize.STRING(500), allowNull: true },
+  tags:                { type: Sequelize.STRING, allowNull: false, defaultValue: '' },
+
+  is_explicit:         { type: Sequelize.BOOLEAN, allowNull: false, defaultValue: false },
+  is_private:          { type: Sequelize.BOOLEAN, allowNull: false, defaultValue: false },
+  visibility:          { type: Sequelize.STRING(75), allowNull: false, defaultValue: '' },
+}, { ...common_model_options, tableName: `Notice`, modelName: `Notice` });
+
+
+
+
+
+
+
+
+
+
+
+/** interview models */
+
+export const Interview = <MyModelStatic> sequelize.define('Interview', {
+  ...common_model_fields,
+
+  owner_id:                  { type: Sequelize.INTEGER, allowNull: false, references: { model: User, key: 'id' } },
+  interviewer_id:            { type: Sequelize.INTEGER, allowNull: true, references: { model: User, key: 'id' } },
+  interviewee_id:            { type: Sequelize.INTEGER, allowNull: true, references: { model: User, key: 'id' } },
+  title:                     { type: Sequelize.STRING, allowNull: false },
+  description:               { type: Sequelize.TEXT, allowNull: false, defaultValue: '' },
+  industry:                  { type: Sequelize.TEXT, allowNull: true, defaultValue: '' },
+  tags:                      { type: Sequelize.TEXT, allowNull: false, defaultValue: '' },
+  skills_accessed:           { type: Sequelize.TEXT, allowNull: false, defaultValue: '' },
+  view_state:                { type: Sequelize.STRING, allowNull: false, defaultValue: INTERVIEW_VIEW_STATE.OPEN },
+  is_private:                { type: Sequelize.BOOLEAN, allowNull: false, defaultValue: false },
+  private_access_fee:        { type: Sequelize.INTEGER, allowNull: true, defaultValue: 0 },
+  
+  photo_id:                  { type: Sequelize.TEXT, allowNull: true },
+  photo_link:                { type: Sequelize.TEXT, allowNull: true },
+  photo_bucket:              { type: Sequelize.TEXT, allowNull: true },
+  photo_key:                 { type: Sequelize.TEXT, allowNull: true },
+
+  video_id:                  { type: Sequelize.TEXT, allowNull: true },
+  video_link:                { type: Sequelize.TEXT, allowNull: true },
+  video_bucket:              { type: Sequelize.TEXT, allowNull: true },
+  video_key:                 { type: Sequelize.TEXT, allowNull: true },
+  
+}, common_model_options);
+
+
+
+
+
+
+
+
+
+
+
+/** question models */
+
+// used for grouping question models
+export const Assessment = <MyModelStatic> sequelize.define('Assessment', {
+  ...common_model_fields,
+
+  owner_id:             { type: Sequelize.INTEGER, allowNull: false, references: { model: User, key: 'id' } },
+  title:                { type: Sequelize.STRING, allowNull: false, defaultValue: '' },
+  description:          { type: Sequelize.TEXT, allowNull: false, defaultValue: '' },
+  image_link:           { type: Sequelize.STRING, allowNull: true, defaultValue: '' },
+  image_id:             { type: Sequelize.STRING, allowNull: true, defaultValue: '' },
+}, common_model_options);
+
+
+
+
+export const Question = <MyModelStatic> sequelize.define('Question', {
+  ...common_model_fields,
+
+  owner_id:             { type: Sequelize.INTEGER, allowNull: false, references: { model: User, key: 'id' } },
+  assessment_id:        { type: Sequelize.INTEGER, allowNull: true, references: { model: Assessment, key: 'id' } },
+  difficulty:           { type: Sequelize.STRING, allowNull: true, defaultValue: '' },
+  title:                { type: Sequelize.STRING, allowNull: false, defaultValue: '' },
+  description:          { type: Sequelize.TEXT, allowNull: false, defaultValue: '' },
+  image_link:           { type: Sequelize.STRING, allowNull: true, defaultValue: '' },
+  image_id:             { type: Sequelize.STRING, allowNull: true, defaultValue: '' },
+}, common_model_options);
+
+
+
+export const Answer = <MyModelStatic> sequelize.define('Answer', {
+  ...common_model_fields,
+
+  owner_id:             { type: Sequelize.INTEGER, allowNull: false, references: { model: User, key: 'id' } },
+  question_id:          { type: Sequelize.INTEGER, allowNull: false, references: { model: Question, key: 'id' } },
+  title:                { type: Sequelize.STRING, allowNull: false, defaultValue: '' },
+  description:          { type: Sequelize.TEXT, allowNull: false, defaultValue: '' },
+  video_link:           { type: Sequelize.STRING, allowNull: true, defaultValue: '' },
+  video_id:             { type: Sequelize.STRING, allowNull: true, defaultValue: '' },
+}, common_model_options);
+
+
+
+
+
+
+/** Misc */
+
+
+export const SiteFeedback = <MyModelStatic> sequelize.define('SiteFeedback', {
+  ...common_model_fields,
+
+  user_id:             { type: Sequelize.INTEGER, allowNull: false, references: { model: User, key: 'id' } },
+  rating:              { type: Sequelize.INTEGER, allowNull: false, defaultValue: 5 },
+  title:               { type: Sequelize.TEXT, allowNull: false, defaultValue: '' },
+  summary:             { type: Sequelize.TEXT, allowNull: false, defaultValue: '' },
+}, common_model_options);
+
+
+
+
+export const ContentReported = <MyModelStatic> sequelize.define('ContentReported', {
+  ...common_model_fields,
+
+  user_id:             { type: Sequelize.INTEGER, allowNull: false, references: { model: User, key: 'id' } },
+  target_user_id:      { type: Sequelize.INTEGER, allowNull: false, references: { model: User, key: 'id' } },
+  target_type:         { type: Sequelize.STRING, allowNull: false, defaultValue: '' },
+  target_id:           { type: Sequelize.INTEGER, allowNull: false, defaultValue: 0 },
+  category:            { type: Sequelize.STRING, allowNull: false, defaultValue: '' },
+  title:               { type: Sequelize.STRING, allowNull: false, defaultValue: '' },
+  summary:             { type: Sequelize.TEXT, allowNull: false, defaultValue: '' },
+}, common_model_options);
+
+
+
+
+export const ApiKey = <MyModelStatic> sequelize.define('ApiKey', {
+  ...common_model_fields,
+
+  key:                 { type: Sequelize.STRING, defaultValue: uuidv4 },
+  firstname:           { type: Sequelize.STRING, allowNull: false, defaultValue: '' },
+  middlename:          { type: Sequelize.STRING, allowNull: true, defaultValue: '' },
+  lastname:            { type: Sequelize.STRING, allowNull: false, defaultValue: '' },
+  email:               { type: Sequelize.STRING, allowNull: false, defaultValue: '' },
+  phone:               { type: Sequelize.STRING, allowNull: false, defaultValue: '' },
+  website:             { type: Sequelize.STRING, allowNull: false, defaultValue: '' },
+  verified:            { type: Sequelize.BOOLEAN, allowNull: false, defaultValue: false },
+}, common_model_options);
+
+export const ApiKeyRequest = <MyModelStatic> sequelize.define('ApiKeyRequest', {
+  ...common_model_fields,
+
+  api_key_id:          { type: Sequelize.INTEGER, allowNull: false, references: { model: ApiKey, key: 'id' } },
+  url:                 { type: Sequelize.STRING, allowNull: false, defaultValue: '' },
+  method:              { type: Sequelize.STRING, allowNull: true, defaultValue: '' },
+  headers:             { type: Sequelize.TEXT, allowNull: false, defaultValue: '' },
+  cookie:              { type: Sequelize.TEXT, allowNull: false, defaultValue: '' },
+  body:                { type: Sequelize.TEXT, allowNull: false, defaultValue: '' },
+  files:               { type: Sequelize.INTEGER, allowNull: false, defaultValue: 0 },
+}, common_model_options);
+
+
+
+
+export const NewsDataCache = <MyModelStatic> sequelize.define('NewsDataCache', {
+  ...common_model_fields,
+
+  name:                { type: Sequelize.STRING, allowNull: false, defaultValue: '' },
+  json_data:           { type: Sequelize.TEXT, allowNull: false, defaultValue: '' },
+}, common_model_options);
+
+
+
+
+
+
+
+
+
+
+
+
+
+/** ------- RELATIONSHIPS ------- */
+
+User.hasMany(UserExpoDevice, { as: 'expo_devices', foreignKey: 'user_id', sourceKey: 'id' });
+UserExpoDevice.belongsTo(User, { as: 'user', foreignKey: 'user_id', targetKey: 'id' });
+
+
+User.hasMany(UserNotification, { as: 'to_notifications', foreignKey: 'to_id', sourceKey: 'id' });
+UserNotification.belongsTo(User, { as: 'to', foreignKey: 'to_id', targetKey: 'id' });
+User.hasMany(UserNotification, { as: 'from_notifications', foreignKey: 'from_id', sourceKey: 'id' });
+UserNotification.belongsTo(User, { as: 'from', foreignKey: 'from_id', targetKey: 'id' });
+
+User.hasMany(Message, { as: 'messages_sent', foreignKey: 'from_id', sourceKey: 'id' });
+Message.belongsTo(User, { as: 'from', foreignKey: 'from_id', targetKey: 'id' });
+User.hasMany(Message, { as: 'messages_received', foreignKey: 'to_id', sourceKey: 'id' });
+Message.belongsTo(User, { as: 'to', foreignKey: 'to_id', targetKey: 'id' });
+
+
+User.hasMany(Rating, { as: 'ratings_received', foreignKey: 'user_id', sourceKey: 'id', scope: { [Sequelize.Op.and]: {  } } });
+Rating.hasMany(User, { as: 'user', foreignKey: 'user_id', sourceKey: 'id' });
+
+// User.hasMany(UserSkill, { as: 'user_skills', foreignKey: 'user_id', sourceKey: 'id' });
+// UserSkill.belongsTo(User, { as: 'user', foreignKey: 'user_id', targetKey: 'id' });
+// User.hasMany(UserSkill, { as: 'user_skills_submitted', foreignKey: 'submitter_id', sourceKey: 'id' });
+// UserSkill.belongsTo(User, { as: 'submitter', foreignKey: 'submitter_id', targetKey: 'id' });
+
+// Skill.hasMany(UserSkill, { as: 'skill_users', foreignKey: 'skill_id', sourceKey: 'id' });
+// UserSkill.belongsTo(Skill, { as: 'skill', foreignKey: 'skill_id', targetKey: 'id' });
+
+// UserSkill.hasMany(UserSkillRating, { as: 'skill_ratings', foreignKey: 'user_skill_id', sourceKey: 'id' });
+// UserSkillRating.belongsTo(UserSkill, { as: 'skill', foreignKey: 'user_skill_id', targetKey: 'id' });
+// User.hasMany(UserSkillRating, { as: 'skill_ratings_written', foreignKey: 'writer_id', sourceKey: 'id' });
+// UserSkillRating.belongsTo(User, { as: 'user', foreignKey: 'writer_id', targetKey: 'id' });
+
+User.hasMany(Notice, { as: 'user_notices', foreignKey: 'owner_id', sourceKey: 'id' });
+Notice.belongsTo(User, { as: 'owner', foreignKey: 'owner_id', targetKey: 'id' });
+
+// User.hasOne(Notice, { as: 'pinned_notice', foreignKey: 'id', sourceKey: 'pinned_notice_id' });
+
+Notice.hasOne(Notice, { as: 'pinned_reply', foreignKey: 'pinned_reply_id', sourceKey: 'id' });
+Notice.belongsTo(Notice, { as: 'pinned_parent', foreignKey: 'pinned_reply_id', targetKey: 'id' });
+Notice.hasMany(Notice, { as: 'notice_replies', foreignKey: 'parent_notice_id', sourceKey: 'id' });
+Notice.belongsTo(Notice, { as: 'parent_notice', foreignKey: 'parent_notice_id', targetKey: 'id' });
+Notice.hasMany(Notice, { as: 'notice_quotes', foreignKey: 'quoting_notice_id', sourceKey: 'id' });
+Notice.belongsTo(Notice, { as: 'quote_notice', foreignKey: 'quoting_notice_id', targetKey: 'id' });
+Notice.hasMany(Notice, { as: 'notice_shares', foreignKey: 'share_notice_id', sourceKey: 'id' });
+Notice.belongsTo(Notice, { as: 'share_notice', foreignKey: 'share_notice_id', targetKey: 'id' });
+
+Notice.hasMany(NoticePhoto, { as: 'notice_photos', foreignKey: 'notice_id', sourceKey: 'id' });
+NoticePhoto.belongsTo(Notice, { as: 'notice', foreignKey: 'notice_id', targetKey: 'id' });
+Notice.hasMany(NoticeVideo, { as: 'notice_videos', foreignKey: 'notice_id', sourceKey: 'id' });
+NoticeVideo.belongsTo(Notice, { as: 'notice', foreignKey: 'notice_id', targetKey: 'id' });
+Notice.hasMany(NoticeAudio, { as: 'notice_audios', foreignKey: 'notice_id', sourceKey: 'id' });
+NoticeAudio.belongsTo(Notice, { as: 'notice', foreignKey: 'notice_id', targetKey: 'id' });
+
+Notice.hasMany(NoticeAnalytic, { as: 'notice_analytics', foreignKey: 'notice_id', sourceKey: 'id' });
+NoticeAnalytic.belongsTo(Notice, { as: 'notice', foreignKey: 'notice_id', targetKey: 'id' });
+
+Notice.hasMany(NoticeReaction, { as: 'notice_reactions', foreignKey: 'notice_id', sourceKey: 'id' });
+NoticeReaction.belongsTo(Notice, { as: 'notice', foreignKey: 'notice_id', targetKey: 'id' });
+User.hasMany(NoticeReaction, { as: 'user_notice_reactions', foreignKey: 'user_id', sourceKey: 'id' });
+NoticeReaction.belongsTo(User, { as: 'user', foreignKey: 'user_id', targetKey: 'id' });
+
+
+
+User.hasMany(Interview, { as: 'interviews', foreignKey: 'owner_id', sourceKey: 'id' });
+Interview.belongsTo(User, { as: 'owner', foreignKey: 'owner_id', targetKey: 'id' });
+User.hasMany(InterviewComment, { as: 'interview_comments', foreignKey: 'owner_id', sourceKey: 'id' });
+InterviewComment.belongsTo(User, { as: 'owner', foreignKey: 'owner_id', targetKey: 'id' });
+User.hasMany(InterviewCommentReply, { as: 'interviewComment_replies', foreignKey: 'owner_id', sourceKey: 'id' });
+InterviewCommentReply.belongsTo(User, { as: 'owner', foreignKey: 'owner_id', targetKey: 'id' });
+
+User.hasMany(Interview, { as: 'interviews_interviewer', foreignKey: 'interviewer_id', sourceKey: 'id' });
+Interview.belongsTo(User, { as: 'interviewer', foreignKey: 'interviewer_id', targetKey: 'id' });
+User.hasMany(Interview, { as: 'interviews_interviewee', foreignKey: 'interviewee_id', sourceKey: 'id' });
+Interview.belongsTo(User, { as: 'interviewee', foreignKey: 'interviewee_id', targetKey: 'id' });
+
+Skill.hasMany(InterviewSkill, { as: 'skill_interviews', foreignKey: 'skill_id', sourceKey: 'id' });
+InterviewSkill.belongsTo(Skill, { as: 'skill', foreignKey: 'skill_id', targetKey: 'id' });
+
+Interview.hasMany(InterviewSkill, { as: 'skills', foreignKey: 'interview_id', sourceKey: 'id' });
+InterviewSkill.belongsTo(Interview, { as: 'interview', foreignKey: 'interview_id', targetKey: 'id' });
+
+Interview.hasMany(InterviewComment, { as: 'comments', foreignKey: 'interview_id', sourceKey: 'id' });
+InterviewComment.belongsTo(Interview, { as: 'interview', foreignKey: 'interview_id', targetKey: 'id' });
+Interview.hasMany(InterviewReaction, { as: 'reactions', foreignKey: 'interview_id', sourceKey: 'id' });
+InterviewReaction.belongsTo(Interview, { as: 'interview', foreignKey: 'interview_id', targetKey: 'id' });
+User.hasMany(InterviewReaction, { as: 'user_interview_reactions', foreignKey: 'user_id', sourceKey: 'id' });
+InterviewReaction.belongsTo(User, { as: 'user', foreignKey: 'user_id', targetKey: 'id' });
+
+InterviewComment.hasMany(InterviewCommentReply, { as: 'replies', foreignKey: 'comment_id', sourceKey: 'id' });
+InterviewCommentReply.belongsTo(InterviewComment, { as: 'comment', foreignKey: 'comment_id', targetKey: 'id' });
+InterviewComment.hasMany(InterviewCommentReaction, { as: 'reactions', foreignKey: 'comment_id', sourceKey: 'id' });
+InterviewCommentReaction.belongsTo(InterviewComment, { as: 'interview', foreignKey: 'comment_id', targetKey: 'id' });
+
+InterviewCommentReply.hasMany(InterviewCommentReplyReaction, { as: 'reactions', foreignKey: 'reply_id', sourceKey: 'id' });
+InterviewCommentReplyReaction.belongsTo(InterviewCommentReply, { as: 'reply', foreignKey: 'reply_id', targetKey: 'id' });

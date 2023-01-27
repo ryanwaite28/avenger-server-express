@@ -29,7 +29,7 @@ export class AssessmentCreateDto {
   @IsNotEmpty()
   @IsString()
   @Matches(GENERIC_TEXT_REGEX)
-  summary: string;
+  description: string;
 
   @IsOptional()
   @IsString()
@@ -53,7 +53,7 @@ export class AssessmentUpdateDto {
   @IsNotEmpty()
   @IsString()
   @Matches(GENERIC_TEXT_REGEX)
-  summary: string;
+  description: string;
 
   @IsOptional()
   @IsString()
@@ -86,7 +86,7 @@ export class QuestionCreateDto {
   @IsNotEmpty()
   @IsString()
   @Matches(GENERIC_TEXT_REGEX)
-  summary: string;
+  description: string;
 
   @IsOptional()
   @IsString()
@@ -98,10 +98,6 @@ export class QuestionCreateDto {
 }
 
 export class QuestionUpdateDto {
-  @IsNotEmpty()
-  @IsInt()
-  is: number;
-
   @IsOptional()
   @IsInt()
   assessment_id: number | null;
@@ -118,7 +114,7 @@ export class QuestionUpdateDto {
   @IsNotEmpty()
   @IsString()
   @Matches(GENERIC_TEXT_REGEX)
-  summary: string;
+  description: string;
 
   @IsOptional()
   @IsString()
@@ -148,7 +144,7 @@ export class AnswerCreateDto {
   @IsNotEmpty()
   @IsString()
   @Matches(GENERIC_TEXT_REGEX)
-  summary: string;
+  description: string;
 
   @IsOptional()
   @IsString()
@@ -200,7 +196,7 @@ export class AnswerRatingCreateDto {
 export class AnswerCommentCreateDto {
   @IsNotEmpty()
   @IsInt()
-  user_id: number;
+  owner_id: number;
   
   @IsNotEmpty()
   @IsInt()
@@ -226,7 +222,7 @@ export class AnswerCommentUpdateDto {
 export class AnswerCommentReplyCreateDto {
   @IsNotEmpty()
   @IsInt()
-  user_id: number;
+  owner_id: number;
   
   @IsNotEmpty()
   @IsInt()

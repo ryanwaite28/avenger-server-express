@@ -1,7 +1,8 @@
+import { MODELS } from '../enums/avenger.enum';
 import {
   WhereOptions
 } from 'sequelize';
-import { UserField } from '../models/avenger.model';
+import { UserCoreModels } from '../models/avenger.model';
 
 
 
@@ -17,8 +18,9 @@ export async function create_user_field(
     fieldname,
     fieldvalue,
   } = params;
-  const user_field = await UserField.create({
-    user_id,
+  const user_field = await UserCoreModels[MODELS.FIELD].create({
+    target_type: MODELS.USER,
+    target_id: user_id,
     fieldname,
     fieldvalue,
   });
@@ -33,7 +35,7 @@ export async function update_user_field(
   whereClause: WhereOptions
 ) {
   try {
-    const user_field_update = await UserField.update(
+    const user_field_update = await UserCoreModels[MODELS.FIELD].update(
       newState,
       { where: whereClause }
     );
@@ -53,7 +55,7 @@ export async function delete_user_field(
   whereClause: WhereOptions
 ) {
   try {
-    const user_field_destroy = await UserField.destroy(
+    const user_field_destroy = await UserCoreModels[MODELS.FIELD].destroy(
       { where: whereClause }
     );
     return user_field_destroy;

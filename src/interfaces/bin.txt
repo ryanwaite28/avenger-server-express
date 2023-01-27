@@ -1,0 +1,21 @@
+export const (.*) = <MyModelStatic> sequelize.define\('.*', \{
+export interface I$1 extends ICommonModel {
+
+
+\}, common_model_options\);?
+
+
+  \.\.\.common_model_fields,\n\n
+\.\.\.core_model_options,\n\n
+
+
+
+
+:([\s]+)\{(.*)(STRING|DATE|TEXT|JSON)(.*)allowNull: true(.*)\},?       ->   : string | null,
+:([\s]+)\{(.*)(STRING|DATE|TEXT|JSON)(.*)allowNull: false(.*)\},?       ->   : string,
+
+:([\s]+)\{(.*)(INTEGER|FLOAT|DOUBLE)(.*)allowNull: true(.*)\},?   ->   : number | null,
+:([\s]+)\{(.*)(INTEGER|FLOAT|DOUBLE)(.*)allowNull: false(.*)\},?   ->   : number,
+
+:([\s]+)\{(.*)(BOOLEAN)(.*)allowNull: true(.*)\},?                ->   : boolean | null,
+:([\s]+)\{(.*)(BOOLEAN)(.*)allowNull: false(.*)\},?                ->   : boolean,

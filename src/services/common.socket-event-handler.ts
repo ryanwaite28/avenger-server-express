@@ -130,7 +130,7 @@ export class CommonSocketEventsHandler {
   }
 
   static emitEventToRoom(params: {
-    room: string;
+    room: string | string[];
     event: string;
     data: PlainObject;
   }) {
@@ -150,11 +150,15 @@ export class CommonSocketEventsHandler {
     if (!('event' in params.data)) {
       params.data.event = params.event;
     }
+    if (!('room' in params.data)) {
+      params.data.room = params.room;
+    }
 
     CommonSocketEventsHandler.io.in(params.room).allSockets().then((roomSockets) => {
       console.log(`emitEventToRoom - Emitting to room ${params.room}...`, roomSockets);
-      CommonSocketEventsHandler.io.in(params.room).emit(params.event, params.data);
     });
+    
+    CommonSocketEventsHandler.io.in(params.room).emit(params.event, params.data);
   }
 
 
