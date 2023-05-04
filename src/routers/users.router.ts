@@ -1,6 +1,6 @@
 import { Router } from 'express';
 
-import { UserExists, UserIdsAreDifferent, YouAuthorized, YouAuthorizedSlim } from '../guards/you.guard';
+import { UserExists, UserIdsAreDifferent, YouAuthorized, YouAuthorizedSlim, YouAuthorizedSlimWeak } from '../guards/you.guard';
 import { UsersRequestHandler } from '../request-handlers/users.handler';
 import { MessagingsRequestHandler } from '../request-handlers/messagings.handler';
 import { UserNotificationsRequestHandler } from '../request-handlers/notifications.handler';
@@ -20,6 +20,8 @@ export const UsersRouter: Router = Router({ mergeParams: true });
 */
 
 UsersRouter.get('/phone/:phone', UsersRequestHandler.get_user_by_phone);
+
+UsersRouter.get(`/query/:query`, YouAuthorizedSlimWeak, UsersRequestHandler.get_users_by_like_query);
 
 UsersRouter.get('/random', UsersRequestHandler.get_random_users);
 UsersRouter.get('/check-session', UsersRequestHandler.check_session);

@@ -11,6 +11,8 @@ import {
   InterviewCommentReplyUpdateDto,
   InterviewCommentUpdateDto,
   InterviewCreateDto,
+  IntervieweeRatingCreateDto,
+  InterviewerRatingCreateDto,
   InterviewUpdateDto
 } from '../dto/interview.dto';
 
@@ -27,6 +29,20 @@ export class InterviewRequestHandler {
     const serviceMethodResults: ServiceMethodResults = await InterviewService.get_interview_by_id(interview_id);
     return response.status(serviceMethodResults.status).json(serviceMethodResults.info);
   }
+
+  @CatchRequestHandlerError()
+  static async get_interviewer_rating_by_id(request: Request, response: Response): ExpressResponse {
+    const rating_id: number = parseInt(request.params.interview_id, 10);
+    const serviceMethodResults: ServiceMethodResults = await InterviewService.get_interviewer_rating_by_id(rating_id);
+    return response.status(serviceMethodResults.status).json(serviceMethodResults.info);
+  }
+  @CatchRequestHandlerError()
+  static async get_interviewee_rating_by_id(request: Request, response: Response): ExpressResponse {
+    const rating_id: number = parseInt(request.params.interview_id, 10);
+    const serviceMethodResults: ServiceMethodResults = await InterviewService.get_interview_by_id(rating_id);
+    return response.status(serviceMethodResults.status).json(serviceMethodResults.info);
+  }
+
   @CatchRequestHandlerError()
   static async get_interview_comment_by_id(request: Request, response: Response): ExpressResponse {
     const interview_id: number = parseInt(request.params.interview_id, 10);
@@ -55,15 +71,15 @@ export class InterviewRequestHandler {
   @CatchRequestHandlerError()
   static async get_user_activity_on_interview_comment(request: Request, response: Response): ExpressResponse {
     const you: IUser = response.locals.you;
-    const interview_id: number = parseInt(request.params.interview_id, 10);
-    const serviceMethodResults: ServiceMethodResults = await InterviewService.get_user_activity_on_interview_comment(you.id, interview_id);
+    const comment_id: number = parseInt(request.params.comment_id, 10);
+    const serviceMethodResults: ServiceMethodResults = await InterviewService.get_user_activity_on_interview_comment(you.id, comment_id);
     return response.status(serviceMethodResults.status).json(serviceMethodResults.info);
   }
   @CatchRequestHandlerError()
   static async get_user_activity_on_interview_comment_reply(request: Request, response: Response): ExpressResponse {
     const you: IUser = response.locals.you;
-    const interview_id: number = parseInt(request.params.interview_id, 10);
-    const serviceMethodResults: ServiceMethodResults = await InterviewService.get_user_activity_on_interview_comment_reply(you.id, interview_id);
+    const reply_id: number = parseInt(request.params.reply_id, 10);
+    const serviceMethodResults: ServiceMethodResults = await InterviewService.get_user_activity_on_interview_comment_reply(you.id, reply_id);
     return response.status(serviceMethodResults.status).json(serviceMethodResults.info);
   }
 
@@ -80,6 +96,50 @@ export class InterviewRequestHandler {
   @CatchRequestHandlerError()
   static async get_latest_trending_skills_on_interviews(request: Request, response: Response): ExpressResponse {
     const serviceMethodResults: ServiceMethodResults = await InterviewService.get_latest_trending_skills_on_interviews();
+    return response.status(serviceMethodResults.status).json(serviceMethodResults.info);
+  }
+
+
+  @CatchRequestHandlerError()
+  static async get_interviewer_ratings_all(request: Request, response: Response): ExpressResponse {
+    const interview_id: number = parseInt(request.params.interview_id, 10);
+    const serviceMethodResults: ServiceMethodResults = await InterviewService.get_interviewer_ratings_all(interview_id);
+    return response.status(serviceMethodResults.status).json(serviceMethodResults.info);
+  }
+  @CatchRequestHandlerError()
+  static async get_interviewer_ratings(request: Request, response: Response): ExpressResponse {
+    const interview_id: number = parseInt(request.params.interview_id, 10);
+    const rating_id: number = parseInt(request.params.rating_id, 10);
+    const serviceMethodResults: ServiceMethodResults = await InterviewService.get_interviewer_ratings(interview_id, rating_id);
+    return response.status(serviceMethodResults.status).json(serviceMethodResults.info);
+  }
+
+  @CatchRequestHandlerError()
+  static async get_interviewee_ratings_all(request: Request, response: Response): ExpressResponse {
+    const interview_id: number = parseInt(request.params.interview_id, 10);
+    const serviceMethodResults: ServiceMethodResults = await InterviewService.get_interviewee_ratings_all(interview_id);
+    return response.status(serviceMethodResults.status).json(serviceMethodResults.info);
+  }
+  @CatchRequestHandlerError()
+  static async get_interviewee_ratings(request: Request, response: Response): ExpressResponse {
+    const interview_id: number = parseInt(request.params.interview_id, 10);
+    const rating_id: number = parseInt(request.params.rating_id, 10);
+    const serviceMethodResults: ServiceMethodResults = await InterviewService.get_interviewee_ratings(interview_id, rating_id);
+    return response.status(serviceMethodResults.status).json(serviceMethodResults.info);
+  }
+
+  @CatchRequestHandlerError()
+  static async check_interviewer_rating_by_writer_id_and_interview_id(request: Request, response: Response): ExpressResponse {
+    const interview_id: number = parseInt(request.params.interview_id, 10);
+    const user_id: number = parseInt(request.params.user_id, 10);
+    const serviceMethodResults: ServiceMethodResults = await InterviewService.check_interviewer_rating_by_writer_id_and_interview_id(interview_id, user_id);
+    return response.status(serviceMethodResults.status).json(serviceMethodResults.info);
+  }
+  @CatchRequestHandlerError()
+  static async check_interviewee_rating_by_writer_id_and_interview_id(request: Request, response: Response): ExpressResponse {
+    const interview_id: number = parseInt(request.params.interview_id, 10);
+    const user_id: number = parseInt(request.params.user_id, 10);
+    const serviceMethodResults: ServiceMethodResults = await InterviewService.check_interviewee_rating_by_writer_id_and_interview_id(interview_id, user_id);
     return response.status(serviceMethodResults.status).json(serviceMethodResults.info);
   }
 
@@ -109,7 +169,7 @@ export class InterviewRequestHandler {
   @CatchRequestHandlerError()
   static async get_interview_comment_replies(request: Request, response: Response): ExpressResponse {
     const interview_id: number = parseInt(request.params.interview_id, 10);
-    const comment_id: number = parseInt(request.params.child_interview_id, 10);
+    const comment_id: number = parseInt(request.params.comment_id, 10);
     const reply_id: number = parseInt(request.params.reply_id, 10);
     const serviceMethodResults: ServiceMethodResults = await InterviewService.get_interview_comment_replies(comment_id, reply_id);
     return response.status(serviceMethodResults.status).json(serviceMethodResults.info);
@@ -193,6 +253,20 @@ export class InterviewRequestHandler {
     const serviceMethodResults: ServiceMethodResults = await InterviewService.create_interview(dto);
     return response.status(serviceMethodResults.status).json(serviceMethodResults.info);
   }
+
+  @CatchRequestHandlerError()
+  static async create_interviewer_rating(request: Request, response: Response): ExpressResponse {
+    const dto: InterviewerRatingCreateDto = response.locals[`dto`];
+    const serviceMethodResults: ServiceMethodResults = await InterviewService.create_interviewer_rating(dto);
+    return response.status(serviceMethodResults.status).json(serviceMethodResults.info);
+  }
+  @CatchRequestHandlerError()
+  static async create_interviewee_rating(request: Request, response: Response): ExpressResponse {
+    const dto: IntervieweeRatingCreateDto = response.locals[`dto`];
+    const serviceMethodResults: ServiceMethodResults = await InterviewService.create_interviewee_rating(dto);
+    return response.status(serviceMethodResults.status).json(serviceMethodResults.info);
+  }
+
   @CatchRequestHandlerError()
   static async create_interview_comment(request: Request, response: Response): ExpressResponse {
     const dto: InterviewCommentCreateDto = response.locals[`dto`];

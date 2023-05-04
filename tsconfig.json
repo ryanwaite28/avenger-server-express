@@ -22,7 +22,9 @@
     "forceConsistentCasingInFileNames": false,
     "noFallthroughCasesInSwitch": false,
     "target": "es2017",
-    "module": "Node16",
+    "module": "CommonJS",
+    "lib": ["es7"],
+    "noLib": false,
     "paths": {
     }
   },
@@ -31,6 +33,7 @@
   ],
   "exclude": [
     "./node_modules",
-    "dist"
+    "dist",
+    "build"
   ]
 }

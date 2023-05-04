@@ -29,6 +29,12 @@ export class UsersRequestHandler {
     return response.status(serviceMethodResults.status).json(serviceMethodResults.info);
   }
 
+  @CatchRequestHandlerError()
+  static async get_users_by_like_query(request: Request, response: Response): ExpressResponse {
+    const you_id: number = response.locals.you?.id || -1;
+    const serviceMethodResults: ServiceMethodResults = await UsersService.get_users_by_like_query(request.params.query, you_id);
+    return response.status(serviceMethodResults.status).json(serviceMethodResults.info);
+  }
 
   
   @CatchRequestHandlerError()

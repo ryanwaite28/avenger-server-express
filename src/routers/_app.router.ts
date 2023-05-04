@@ -15,6 +15,7 @@ import { QuestionRouter } from './question.router';
 import { AssessmentRouter } from './assessment.router';
 import { ValidateApiRequest } from '../middlewares/api-client-validation.middleware';
 import { NoticeRouter } from './notice.router';
+import { CsrfAuthGuard } from '../middlewares/csrf.middleware';
 
 
 
@@ -50,7 +51,7 @@ if (true) {
   WebRouter.options(`*`, corsWebMiddleware);
   WebRouter.use(corsWebMiddleware);
 }
-WebRouter.use(`/web`, AppRouter);
+WebRouter.use(`/web`, CsrfAuthGuard, AppRouter);
 
 
 

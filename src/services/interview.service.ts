@@ -1,6 +1,8 @@
 import { ServiceMethodResults } from "../interfaces/common.interface";
 import { HttpStatusCode } from "../enums/http-codes.enum";
 import {
+  check_interviewer_rating_by_writer_id_and_interview_id,
+  check_interviewee_rating_by_writer_id_and_interview_id,
   check_user_interview_activity,
   create_interview,
   create_interview_comment,
@@ -10,6 +12,8 @@ import {
   delete_interview,
   delete_interview_reaction,
   get_feed_content_for_user,
+  get_interviewer_rating_by_id,
+  get_interviewee_rating_by_id,
   get_interview_by_id,
   get_interview_comment_by_id,
   get_interview_comment_reply_by_id,
@@ -33,10 +37,20 @@ import {
   update_interview_comment_reaction,
   get_user_interview_comment_reply_reaction,
   create_interview_comment_reply_reaction,
+  create_interviewer_rating,
+  create_interviewee_rating,
   delete_interview_comment,
   delete_interview_comment_reply,
   update_interview_comment_reply,
   update_interview_comment,
+  get_interviewer_ratings_all,
+  get_interviewee_ratings_all,
+  get_interviewer_ratings,
+  get_interviewee_ratings,
+  get_interview_ratings_stat,
+  update_interview_comment_reply_reaction,
+  delete_interview_comment_reaction,
+  delete_interview_comment_reply_reaction,
 } from "../repos/interview.repo";
 import {
   ANALYTIC_EVENTS,
@@ -52,11 +66,14 @@ import {
   InterviewCommentUpdateDto,
   InterviewCreateDto,
   InterviewUpdateDto,
+  InterviewerRatingCreateDto,
+  IntervieweeRatingCreateDto
 } from "../dto/interview.dto";
 import {
   IInterview,
   IComment,
   IUser,
+  IRating,
 } from "../interfaces/avenger.models.interface";
 import { MENTIONS_REGEX } from "../regex/common.regex";
 import { create_notification_and_send } from "../repos/notifications.repo";
@@ -105,6 +122,99 @@ export class InterviewService {
   }
 
 
+  static async get_interviewer_rating_by_id(id: number): Promise<ServiceMethodResults> {
+    const data = await get_interviewer_rating_by_id(id);
+    const serviceMethodResults: ServiceMethodResults = {
+      status: HttpStatusCode.OK,
+      error: false,
+      info: {
+        data,
+      }
+    };
+    return serviceMethodResults;
+  }
+  static async get_interviewee_rating_by_id(id: number): Promise<ServiceMethodResults> {
+    const data = await get_interviewee_rating_by_id(id);
+    const serviceMethodResults: ServiceMethodResults = {
+      status: HttpStatusCode.OK,
+      error: false,
+      info: {
+        data,
+      }
+    };
+    return serviceMethodResults;
+  }
+
+
+  static async get_interviewer_ratings_all(interview_id: number): Promise<ServiceMethodResults> {
+    const data = await get_interviewer_ratings_all(interview_id);
+    const serviceMethodResults: ServiceMethodResults = {
+      status: HttpStatusCode.OK,
+      error: false,
+      info: {
+        data,
+      }
+    };
+    return serviceMethodResults;
+  }
+  static async get_interviewer_ratings(interview_id: number, min_id?: number): Promise<ServiceMethodResults> {
+    const data = await get_interviewer_ratings(interview_id, min_id);
+    const serviceMethodResults: ServiceMethodResults = {
+      status: HttpStatusCode.OK,
+      error: false,
+      info: {
+        data,
+      }
+    };
+    return serviceMethodResults;
+  }
+
+  static async get_interviewee_ratings_all(interview_id: number): Promise<ServiceMethodResults> {
+    const data = await get_interviewee_ratings_all(interview_id);
+    const serviceMethodResults: ServiceMethodResults = {
+      status: HttpStatusCode.OK,
+      error: false,
+      info: {
+        data,
+      }
+    };
+    return serviceMethodResults;
+  }
+
+  static async get_interviewee_ratings(interview_id: number, min_id?: number): Promise<ServiceMethodResults> {
+    const data = await get_interviewee_ratings(interview_id, min_id);
+    const serviceMethodResults: ServiceMethodResults = {
+      status: HttpStatusCode.OK,
+      error: false,
+      info: {
+        data,
+      }
+    };
+    return serviceMethodResults;
+  }
+
+  static async check_interviewer_rating_by_writer_id_and_interview_id(interview_id: number, user_id: number): Promise<ServiceMethodResults> {
+    const data = await check_interviewer_rating_by_writer_id_and_interview_id(user_id, interview_id);
+    const serviceMethodResults: ServiceMethodResults = {
+      status: HttpStatusCode.OK,
+      error: false,
+      info: {
+        data,
+      }
+    };
+    return serviceMethodResults;
+  }
+  static async check_interviewee_rating_by_writer_id_and_interview_id(interview_id: number, user_id: number): Promise<ServiceMethodResults> {
+    const data = await check_interviewee_rating_by_writer_id_and_interview_id(user_id, interview_id);
+    const serviceMethodResults: ServiceMethodResults = {
+      status: HttpStatusCode.OK,
+      error: false,
+      info: {
+        data,
+      }
+    };
+    return serviceMethodResults;
+  }
 
   static async get_interview_comments_all(interview_id: number): Promise<ServiceMethodResults> {
     const data = await get_interview_comments_all(interview_id);
@@ -276,7 +386,7 @@ export class InterviewService {
           create_notification_and_send({
             from_id: interview.owner_id,
             to_id: user.id,
-            event: AVENGER_EVENT_TYPES.INTERVIEW_MENTION,
+            event: `INTERVIEW:${interview.id}:${AVENGER_EVENT_TYPES.MENTION}`,
             target_type: MODELS.INTERVIEW,
             target_id: interview.id,
             to_phone: user.phone,
@@ -295,12 +405,62 @@ export class InterviewService {
     };
     return serviceMethodResults;
   }
+  static async create_interviewer_rating(dto: InterviewerRatingCreateDto): Promise<ServiceMethodResults> {
+    const rating: IRating = await create_interviewer_rating(dto);
+    const rating_stats = await get_interview_ratings_stat(dto.interview_id, INTERVIEW_STAT.INTERVIEWER_RATING);
+
+    CommonSocketEventsHandler.emitEventToRoom({
+      room: `INTERVIEW:${dto.interview_id}`,
+      event: `INTERVIEW:${dto.interview_id}:${AVENGER_EVENT_TYPES.INTERVIEWER_RATING}`,
+      data: {
+        rating,
+        rating_stats
+      },
+    });
+
+    const serviceMethodResults: ServiceMethodResults = {
+      status: HttpStatusCode.OK,
+      error: false,
+      info: {
+        data: {
+          rating,
+          rating_stats
+        },
+      }
+    };
+    return serviceMethodResults;
+  }
+  static async create_interviewee_rating(dto: IntervieweeRatingCreateDto): Promise<ServiceMethodResults> {
+    const rating: IRating = await create_interviewee_rating(dto);
+    const rating_stats = await get_interview_ratings_stat(dto.interview_id, INTERVIEW_STAT.INTERVIEWEE_RATING);
+
+    CommonSocketEventsHandler.emitEventToRoom({
+      room: `INTERVIEW:${dto.interview_id}`,
+      event: `INTERVIEW:${dto.interview_id}:${AVENGER_EVENT_TYPES.INTERVIEWEE_RATING}`,
+      data: {
+        rating,
+        rating_stats
+      },
+    });
+
+    const serviceMethodResults: ServiceMethodResults = {
+      status: HttpStatusCode.OK,
+      error: false,
+      info: {
+        data: {
+          rating,
+          rating_stats
+        }
+      }
+    };
+    return serviceMethodResults;
+  }
   static async create_interview_comment(dto: InterviewCommentCreateDto): Promise<ServiceMethodResults> {
     const comment: any = await create_interview_comment(dto);
 
     CommonSocketEventsHandler.emitEventToRoom({
       room: `INTERVIEW:${dto.interview_id}`,
-      event: `INTERVIEW:${dto.interview_id}:${AVENGER_EVENT_TYPES.NEW_INTERVIEW_COMMENT}`,
+      event: `INTERVIEW:${dto.interview_id}:${AVENGER_EVENT_TYPES.NEW_COMMENT}`,
       data: {
         comment
       },
@@ -316,19 +476,23 @@ export class InterviewService {
     return serviceMethodResults;
   }
   static async create_interview_comment_reply(dto: InterviewCommentReplyCreateDto): Promise<ServiceMethodResults> {
-    const data = await create_interview_comment_reply(dto);
+    const reply = await create_interview_comment_reply(dto);
 
     CommonSocketEventsHandler.emitEventToRoom({
-      room: `INTERVIEW_COMMENT:${data.interview_id}`,
-      event: `INTERVIEW_COMMENT:${data.comment_id}:${AVENGER_EVENT_TYPES.NEW_INTERVIEW_COMMENT_REPLY}`,
-      data,
+      room: `INTERVIEW_COMMENT:${dto.comment_id}`,
+      event: `INTERVIEW_COMMENT:${dto.comment_id}:${AVENGER_EVENT_TYPES.NEW_COMMENT_REPLY}`,
+      data: {
+        reply
+      },
     });
 
     const serviceMethodResults: ServiceMethodResults = {
       status: HttpStatusCode.OK,
       error: false,
       info: {
-        data,
+        data: {
+          reply
+        },
       }
     };
     return serviceMethodResults;
@@ -365,7 +529,7 @@ export class InterviewService {
       room: `INTERVIEW_COMMENT:${interview_id}`,
       event: `INTERVIEW_COMMENT:${interview_id}:${AVENGER_EVENT_TYPES.UPDATED}`,
       data: {
-        interview: data.model,
+        comment: data.model,
         results: data.rows,
       },
     });
@@ -375,7 +539,7 @@ export class InterviewService {
       error: false,
       info: {
         data: {
-          interview: data.model,
+          comment: data.model,
           results: data.rows,
         },
       }
@@ -389,7 +553,7 @@ export class InterviewService {
       room: `INTERVIEW_COMMENT_REPLY:${reply_id}`,
       event: `INTERVIEW_COMMENT_REPLY:${reply_id}:${AVENGER_EVENT_TYPES.UPDATED}`,
       data: {
-        interview: data.model,
+        reply: data.model,
         results: data.rows,
       },
     });
@@ -399,7 +563,7 @@ export class InterviewService {
       error: false,
       info: {
         data: {
-          interview: data.model,
+          reply: data.model,
           results: data.rows,
         },
       }
@@ -443,7 +607,7 @@ export class InterviewService {
         room: `INTERVIEW_COMMENT:${comment_id}`,
         event: `INTERVIEW_COMMENT:${comment_id}:${AVENGER_EVENT_TYPES.DELETED}`,
         data: {
-          interview: data.model,
+          comment: data.model,
           results: data.results,
         },
       });
@@ -480,7 +644,7 @@ export class InterviewService {
       error: false,
       info: {
         data: {
-          interview: data.model,
+          reply: data.model,
           results: data.results,
         },
       }
@@ -529,10 +693,11 @@ export class InterviewService {
         });
         return serviceMethodResults;
       }
-
-      // update reaction with new type
-      const results = await update_interview_reaction(reaction.user_id, reaction_type);
-      reaction = await get_user_interview_reaction(owner_id, interview_id);
+      else {
+        // update reaction with new type
+        const results = await update_interview_reaction(reaction.user_id, reaction_type);
+        reaction = results.model;
+      }
     }
 
     CommonSocketEventsHandler.emitEventToRoom({
@@ -553,6 +718,7 @@ export class InterviewService {
     };
     return serviceMethodResults;
   }
+
   static async toggle_interview_comment_reaction(params: { owner_id: number, comment_id: number, reaction_type: string }): Promise<ServiceMethodResults> {
     const { owner_id, comment_id, reaction_type } = params;
 
@@ -575,7 +741,7 @@ export class InterviewService {
     else {
       if (reaction.reaction_type === reaction_type) {
         // same reaction type sent; un-toggle/delete
-        const deletes = await delete_interview_reaction(reaction.id);
+        const deletes = await delete_interview_comment_reaction(reaction.id);
         const serviceMethodResults: ServiceMethodResults = {
           status: HttpStatusCode.OK,
           error: false,
@@ -618,6 +784,7 @@ export class InterviewService {
     };
     return serviceMethodResults;
   }
+
   static async toggle_interview_comment_reply_reaction(params: { owner_id: number, reply_id: number, reaction_type: string }): Promise<ServiceMethodResults> {
     const { owner_id, reply_id, reaction_type } = params;
 
@@ -640,7 +807,7 @@ export class InterviewService {
     else {
       if (reaction.reaction_type === reaction_type) {
         // same reaction type sent; un-toggle/delete
-        const deletes = await delete_interview_reaction(reaction.id);
+        const deletes = await delete_interview_comment_reply_reaction(reaction.id);
         const serviceMethodResults: ServiceMethodResults = {
           status: HttpStatusCode.OK,
           error: false,
@@ -658,10 +825,11 @@ export class InterviewService {
         });
         return serviceMethodResults;
       }
-
-      // update reaction with new type
-      const results = await update_interview_reaction(reaction.user_id, reaction_type);
-      reaction = await get_user_interview_reaction(owner_id, reply_id);
+      else {
+        // update reaction with new type
+        const results = await update_interview_comment_reply_reaction(reaction.user_id, reaction_type);
+        reaction = results.model;
+      }
     }
 
     CommonSocketEventsHandler.emitEventToRoom({

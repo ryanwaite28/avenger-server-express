@@ -27,32 +27,11 @@ const positionstack_api: string = `http://api.positionstack.com/v1`;
 
 export class UtilsService {
   static set_xsrf_token(response: Response): ServiceMethodResults {
-    const token = generateJWT(process.env.APP_SECRET);
-    
-    response.cookie('xsrf-token', token, cookieOptions as CookieOptions);
-
     const serviceMethodResults: ServiceMethodResults = {
       status: HttpStatusCode.OK,
       error: false,
       info: {
         message: `new xsrf-token cookie sent.`,
-      }
-    };
-    return serviceMethodResults;
-  }
-
-  static set_xsrf_token_pair(response: Response): ServiceMethodResults {
-    const datetime = new Date().toISOString();
-    const jwt = generateJWT(datetime);
-    
-    response.cookie('xsrf-token-a', datetime, cookieOptions as CookieOptions);
-    response.cookie('xsrf-token-b', jwt, cookieOptions as CookieOptions);
-
-    const serviceMethodResults: ServiceMethodResults = {
-      status: HttpStatusCode.OK,
-      error: false,
-      info: {
-        message: `new xsrf-token cookies sent.`,
       }
     };
     return serviceMethodResults;

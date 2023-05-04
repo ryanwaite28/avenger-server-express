@@ -1,6 +1,12 @@
 import { NextFunction, Request, Response } from 'express';
 import { InterviewCreateDto } from '../dto/interview.dto';
-import { get_interview_by_id_slim, get_interview_comment_by_id_slim, get_interview_comment_reply_by_id_slim } from '../repos/interview.repo';
+import { 
+  check_interviewer_rating_by_writer_id_and_interview_id,
+  check_interviewee_rating_by_writer_id_and_interview_id,
+  get_interview_by_id_slim,
+  get_interview_comment_by_id_slim,
+  get_interview_comment_reply_by_id_slim
+} from '../repos/interview.repo';
 import { HttpStatusCode } from '../enums/http-codes.enum';
 import { IComment, IInterview, IReply, IUser } from '../interfaces/avenger.models.interface';
 
@@ -100,6 +106,30 @@ export async function IsInterviewCommentReplyOwner(request: Request, response: R
   if (reply.owner_id !== you.id) {
     return response.status(HttpStatusCode.FORBIDDEN).json({
       message: `Reply is not owned by you`
+    });
+  }
+  return next();
+}
+
+export async function DidNotCreateInterviewerRatingGuard(request: Request, response: Response, next: NextFunction) {
+  const you: IUser = response.locals.you;
+  const interview: IInterview = response.locals.interview;
+  const ratingExists: boolean = await check_interviewer_rating_by_writer_id_and_interview_id(you.id, interview.id);
+  if (ratingExists) {
+    return response.status(HttpStatusCode.FORBIDDEN).json({
+      message: `Rating already created by user`
+    });
+  }
+  return next();
+}
+
+export async function DidNotCreateIntervieweeRatingGuard(request: Request, response: Response, next: NextFunction) {
+  const you: IUser = response.locals.you;
+  const interview: IInterview = response.locals.interview;
+  const ratingExists: boolean = await check_interviewee_rating_by_writer_id_and_interview_id(you.id, interview.id);
+  if (ratingExists) {
+    return response.status(HttpStatusCode.FORBIDDEN).json({
+      message: `Rating already created by user`
     });
   }
   return next();

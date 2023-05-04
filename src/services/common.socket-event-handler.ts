@@ -124,7 +124,7 @@ export class CommonSocketEventsHandler {
 
     const usersSocketsRoom = `FOR_USER:${params.user_id}`;
     CommonSocketEventsHandler.io?.in(usersSocketsRoom).allSockets().then((usersSockets) => {
-      console.log(`emitEventToUserSockets - Emitting to room ${usersSocketsRoom}...`, usersSockets);
+      console.log(`emitEventToUserSockets - Emitting to room ${usersSocketsRoom}...`, { usersSockets, params });
       CommonSocketEventsHandler.io.in(usersSocketsRoom).emit(params.event, params.event_data);
     });
   }
@@ -155,7 +155,7 @@ export class CommonSocketEventsHandler {
     }
 
     CommonSocketEventsHandler.io.in(params.room).allSockets().then((roomSockets) => {
-      console.log(`emitEventToRoom - Emitting to room ${params.room}...`, roomSockets);
+      console.log(`emitEventToRoom - Emitting to room ${params.room}...`, { roomSockets, params });
     });
     
     CommonSocketEventsHandler.io.in(params.room).emit(params.event, params.data);

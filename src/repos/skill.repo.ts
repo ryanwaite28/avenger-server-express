@@ -69,7 +69,7 @@ export function get_skill_by_name(name: string): Promise<ISkill | null> {
 }
 
 export function get_skill_by_like_query(query: string) {
-  const useQuery = query.replace(/%/gi, ''); // strip possible percentages
+  const useQuery = query.replace(/%/gi, '').toLowerCase(); // strip possible percentages
   return skill_crud.findAll({
     where: {
       name: where(fn('LOWER', col('name')), 'LIKE', '%' + useQuery + '%'),

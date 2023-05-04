@@ -1,7 +1,9 @@
 import {
+  col,
   fn,
   Model,
   Op,
+  where,
   WhereOptions
 } from 'sequelize';
 import { ApiKey, User, UserExpoDevice, UserCoreModels } from '../models/avenger.model';
@@ -36,6 +38,26 @@ export async function create_user(params: UserSignUpDto) {
   const new_user_model = await User.create(createOptions);
   const user = await get_user_by_id(new_user_model.dataValues.id);
   return user!;
+}
+
+export function get_users_by_like_query(query: string, exclude_user_id: number = -1) {
+  const useQuery = query.replace(/\%/gi, '').toLowerCase(); // strip possible percentages
+  const useWhere = {
+    id: {
+      [Op.ne]: exclude_user_id
+    },
+    [Op.or]: [
+      { username: where(fn('LOWER', col('username')), 'LIKE', '%' + useQuery + '%'), },
+      { displayname: where(fn('LOWER', col('displayname')), 'LIKE', '%' + useQuery + '%'), },
+    ]
+  };
+  console.log(useWhere);
+  return user_crud.findAll({
+    where: useWhere,
+    attributes: user_attrs_slim,
+    limit: 20,
+    order: [['displayname', 'ASC']]
+  });
 }
 
 export async function get_random_users(limit: number) {

@@ -1,8 +1,8 @@
-import { col, fn, Includeable, Model, Op, WhereOptions } from "sequelize";
+import { cast, col, fn, Includeable, Model, Op, WhereOptions } from "sequelize";
 import { user_attrs_slim } from "../utils/constants.utils";
 import { create_model_crud_repo_from_model_class } from "../utils/helpers.utils";
 
-import { Interview, Skill, User, InterviewSocialModels, InterviewCoreModels, InterviewSkills } from "../models/avenger.model";
+import { Interview, Skill, User, InterviewSocialModels, InterviewCoreModels, InterviewerRating, IntervieweeRating, InterviewSkills } from "../models/avenger.model";
 import {
   IAnalytic,
   IComment,
@@ -23,6 +23,8 @@ import {
   InterviewCommentReplyUpdateDto,
   InterviewCommentUpdateDto,
   InterviewCreateDto,
+  IntervieweeRatingCreateDto,
+  InterviewerRatingCreateDto,
   InterviewUpdateDto,
 } from "../dto/interview.dto";
 import { generic_owner_include } from "./_common.repo";
@@ -35,7 +37,11 @@ import { generic_owner_include } from "./_common.repo";
 const interview_crud = create_model_crud_repo_from_model_class<IInterview>(Interview);
 const interview_analytic_crud = create_model_crud_repo_from_model_class<IAnalytic>(InterviewCoreModels[MODELS.ANALYTIC]);
 const interview_reaction_crud = create_model_crud_repo_from_model_class<IReaction>(InterviewSocialModels.Reaction);
-const interview_rating_crud = create_model_crud_repo_from_model_class<IRating>(InterviewCoreModels[MODELS.RATING]);
+
+const interviewer_rating_crud = create_model_crud_repo_from_model_class<IRating>(InterviewerRating);
+const interviewee_rating_crud = create_model_crud_repo_from_model_class<IRating>(IntervieweeRating);
+
+
 
 const interview_comment_crud = create_model_crud_repo_from_model_class<IComment>(InterviewSocialModels.Comment);
 const interview_comment_reaction_crud = create_model_crud_repo_from_model_class<IReaction>(InterviewSocialModels.CommentReaction);
@@ -50,11 +56,16 @@ const interview_general_includes: Includeable[] = [
   { model: User, as: `interviewer`, attributes: user_attrs_slim },
   { model: User, as: `interviewee`, attributes: user_attrs_slim },
 
-  { model: InterviewSocialModels.Comment, as: `comments`, attributes: null, limit: 0, separate: true,  },
+  { model: InterviewSocialModels.Comment, as: `comments`, attributes: null, limit: 0, separate: true, },
+  { model: InterviewerRating, as: `interviewer_ratings`, attributes: null, limit: 0, separate: true, },
+  { model: IntervieweeRating, as: `interviewee_ratings`, attributes: null, limit: 0, separate: true, },
+  { model: Skill, as: `skills` },
 ];
 
 // include: [{ model: Reply, as: `replies`, attributes: null, limit: 0, separate: true }]
 
+
+const rating_include = [{ model: User, as: `writer`, attributes: user_attrs_slim }];
 
 
 
@@ -98,6 +109,48 @@ export function get_interview_comment_reply_by_id(id: number) {
     where: { id },
     include: generic_owner_include
   });
+}
+
+
+
+export function get_interviewer_rating_by_id(id: number) {
+  return interviewer_rating_crud.findOne({
+    where: { id },
+    include: rating_include
+  });
+}
+export function get_interviewee_rating_by_id(id: number) {
+  return interviewee_rating_crud.findOne({
+    where: { id },
+    include: rating_include
+  });
+}
+
+export function get_interviewer_rating_by_writer_id_and_interview_id(writer_id: number, interview_id: number) {
+  return interviewer_rating_crud.findOne({
+    where: { writer_id, interview_id },
+    include: rating_include
+  });
+}
+export function get_interviewee_rating_by_writer_id_and_interview_id(writer_id: number, interview_id: number) {
+  return interviewee_rating_crud.findOne({
+    where: { writer_id, interview_id },
+    include: rating_include
+  });
+}
+export function check_interviewer_rating_by_writer_id_and_interview_id(writer_id: number, interview_id: number) {
+  return interviewer_rating_crud.findOne({
+    where: { writer_id, interview_id },
+    attributes: ['id']
+  })
+  .then((model) => !!model);
+}
+export function check_interviewee_rating_by_writer_id_and_interview_id(writer_id: number, interview_id: number) {
+  return interviewee_rating_crud.findOne({
+    where: { writer_id, interview_id },
+    attributes: ['id']
+  })
+  .then((model) => !!model);
 }
 
 
@@ -151,9 +204,9 @@ export async function get_user_activity_on_interview(owner_id: number, interview
 
   return info;
 }
-export async function get_user_activity_on_interview_comment(owner_id: number, interview_id: number): Promise<any> {
-  const reacted = await interview_comment_reaction_crud.findOne({ where: { interview_id, owner_id } });
-  const replied = await interview_comment_reply_crud.findOne({ where: { interview_id, owner_id } });
+export async function get_user_activity_on_interview_comment(owner_id: number, comment_id: number): Promise<any> {
+  const reacted = await interview_comment_reaction_crud.findOne({ where: { comment_id, owner_id } });
+  const replied = await interview_comment_reply_crud.findOne({ where: { comment_id, owner_id } });
 
   const info: any = {
     reacted,
@@ -162,8 +215,8 @@ export async function get_user_activity_on_interview_comment(owner_id: number, i
 
   return info;
 }
-export async function get_user_activity_on_interview_comment_reply(owner_id: number, interview_id: number): Promise<any> {
-  const reacted = await interview_reaction_crud.findOne({ where: { interview_id, owner_id } });
+export async function get_user_activity_on_interview_comment_reply(owner_id: number, reply_id: number): Promise<any> {
+  const reacted = await interview_comment_reply_reaction_crud.findOne({ where: { reply_id, owner_id } });
 
   const info: any = {
     reacted,
@@ -194,6 +247,36 @@ export function get_interview_comments(interview_id: number, min_id?: number) {
   });
 }
 
+export function get_interviewee_ratings_all(interview_id: number) {
+  return interviewee_rating_crud.findAll({
+    where: { interview_id },
+    include: rating_include,
+  });
+}
+export function get_interviewee_ratings(interview_id: number, min_id?: number) {
+  return interviewee_rating_crud.paginate({
+    user_id_field: 'interview_id',
+    user_id: interview_id,
+    min_id,
+    include: rating_include,
+  });
+}
+
+export function get_interviewer_ratings_all(interview_id: number) {
+  return interviewer_rating_crud.findAll({
+    where: { interview_id },
+    include: rating_include,
+  });
+}
+export function get_interviewer_ratings(interview_id: number, min_id?: number) {
+  return interviewer_rating_crud.paginate({
+    user_id_field: 'interview_id',
+    user_id: interview_id,
+    min_id,
+    include: rating_include,
+  });
+}
+
 
 
 export function get_interview_comment_replies_all(comment_id: number) {
@@ -215,18 +298,19 @@ export function get_interview_comment_replies(comment_id: number, min_id?: numbe
 
 export async function get_interview_stats(interview_id: number): Promise<IInterviewStats> {
   const skills_count = await InterviewSkills.count({ where: { interview_id } });
-  const interviewer_rating: any = await interview_rating_crud.findOne({
+
+  const interviewer_rating: any = await interviewer_rating_crud.findOne({
     where: { interview_id },
     attributes: [
-      [fn('AVG', col('rating')), 'avg'],
-      [fn('COUNT', col('rating')), 'count'] 
+      [cast(fn('AVG', col('rating')), 'float'), 'avg'],
+      [cast(fn('COUNT', col('rating')), 'float'), 'count'] 
     ]
   });
-  const interviewee_rating: any = await interview_rating_crud.findOne({
+  const interviewee_rating: any = await interviewee_rating_crud.findOne({
     where: { interview_id },
     attributes: [
-      [fn('AVG', col('rating')), 'avg'],
-      [fn('COUNT', col('rating')), 'count'] 
+      [cast(fn('AVG', col('rating')), 'float'), 'avg'],
+      [cast(fn('COUNT', col('rating')), 'float'), 'count'] 
     ]
   });
   
@@ -319,9 +403,32 @@ export async function get_interview_stat(interview_id: number, stat: INTERVIEW_S
     case INTERVIEW_STAT.DETAILS_EXPANDED_COUNT: {
       return interview_analytic_crud.count({ where: { interview_id, event: ANALYTIC_EVENTS.DETAILS_EXPANDED } });
     }
+  }
+}
+export async function get_interview_ratings_stat(interview_id: number, stat: INTERVIEW_STAT) {
+  switch (stat) {
+    case INTERVIEW_STAT.INTERVIEWER_RATING: {
+      return interviewer_rating_crud.findOne({
+        where: { interview_id },
+        attributes: [
+          [cast(fn('AVG', col('rating')), 'float'), 'avg'],
+          [cast(fn('COUNT', col('rating')), 'float'), 'count'] 
+        ]
+      });
+    }
+    case INTERVIEW_STAT.INTERVIEWEE_RATING: {
+      return interviewee_rating_crud.findOne({
+        where: { interview_id },
+        attributes: [
+          [cast(fn('AVG', col('rating')), 'float'), 'avg'],
+          [cast(fn('COUNT', col('rating')), 'float'), 'count'] 
+        ]
+      });
+    }
+
 
     default: {
-      return -1;
+      return null;
     }
   }
 }
@@ -348,7 +455,7 @@ export function get_user_interview_comment_reply_reaction(user_id: number, reply
 
 /** CREATE */
 
-export function create_interview(dto: InterviewCreateDto) {
+export async function create_interview(dto: InterviewCreateDto) {
   // const {
   //   owner_id,
   //   interviewee_id,
@@ -365,11 +472,30 @@ export function create_interview(dto: InterviewCreateDto) {
   //   body,
   // };
 
-  return interview_crud.create({ ...dto, title: dto.title?.trim(), description: dto.description?.trim() }).then((model) => get_interview_by_id(model.id));
+
+  const skill_ids = dto.skill_ids ? [...dto.skill_ids] : [];
+  const createObj = { ...dto };
+  delete createObj['skill_ids'];
+
+  const model = await interview_crud.create({ ...createObj, title: dto.title?.trim(), description: dto.description?.trim() });
+  const skillsModels = skill_ids.length
+    ? (await InterviewSkills.bulkCreate(skill_ids.map(skill_id => ({ skill_id, interview_id: model.id })), { ignoreDuplicates: true, returning: true }))
+    : [];
+  const interview = await get_interview_by_id(model.id)
+  return interview;
 }
 
 export function create_user_interview_activity(params: { user_id: number, interview_id: number, event: ANALYTIC_EVENTS }) {
   return interview_analytic_crud.create(params);
+}
+
+
+
+export function create_interviewer_rating(dto: InterviewerRatingCreateDto) {
+  return interviewer_rating_crud.create(dto).then((model) => get_interviewer_rating_by_id(model.id));
+}
+export function create_interviewee_rating(dto: IntervieweeRatingCreateDto) {
+  return interviewee_rating_crud.create(dto).then((model) => get_interviewee_rating_by_id(model.id));
 }
 
 

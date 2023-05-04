@@ -11,7 +11,6 @@ import { HttpStatusCode } from '../enums/http-codes.enum';
 import { IPaginateModelsOptions, IRandomModelsOptions, MyModelStatic, ServiceMethodResults } from '../interfaces/common.interface';
 import { SKILL_NAME_REGEX } from "../regex/skill.regex";
 import { AUTH_BEARER_HEADER_REGEX } from "../regex/common.regex";
-import { v1 as uuidv1, v4 as uuidv4 } from 'uuid';
 import { getRandomModels, paginateTable } from "../repos/_common.repo";
 
 
@@ -46,10 +45,7 @@ export function uniqueValue() {
     Math.random().toString(36).substr(2, 34);
 }
 
-export function uniqueApiKey () {
-  const value = `${uuidv1()}_${uuidv4()}`;
-  return 
-}
+
 
 export function capitalize(str: string) {
   if (!str) {

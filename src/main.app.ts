@@ -22,6 +22,7 @@ import { GatewayRouter } from './routers/_app.router';
 import { avenger_db_init } from './models/_def.model';
 import { installTemplatesExpressApp } from './utils/template-engine.utils';
 import { RequestLoggerMiddleware } from './middlewares/request-logger.middleware';
+import { CsrfSetCookieMiddle } from './middlewares/csrf.middleware';
 
 
 
@@ -53,6 +54,7 @@ app.use(urlencoded({ extended: false }));
 
 // request logger/analytics middleware
 app.use(RequestLoggerMiddleware);
+app.use(CsrfSetCookieMiddle);
 
 
 

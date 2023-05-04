@@ -1,22 +1,14 @@
 import {
-  JSON as JSON_TYPE,
   STRING, TEXT,
-  DATE, NOW,
-  BOOLEAN,
   INTEGER,
-  UUIDV1, UUIDV4,
-  fn, Op, col, where, literal
 } from 'sequelize';
-import { STATUSES } from '../enums/common.enum';
-import { v4 as uuidv4 } from 'uuid';
 
-import { AVENGER_ADMIN_ROLES, AVENGER_SKILL_STATUS, INTERVIEW_VIEW_STATE, MODELS } from '../enums/avenger.enum';
+import { MODELS } from '../enums/avenger.enum';
 import { MyModelStatic, PlainObject } from '../interfaces/common.interface';
 import {
   sequelizeInst as sequelize,
   common_model_options,
   common_model_fields,
-  core_model_options,
 } from './_def.model';
 
 
@@ -123,7 +115,7 @@ const childCoreModelCreateFnByModelMap: { [key in MODELS]?: childCoreModelCreate
       image_id:             { type: STRING, allowNull: true, defaultValue: '' },
     }, common_model_options);
     if (!params.ignoreRelationships) {
-      params.parentModelClass.hasMany(childModel, { as: `${params.parentModelName.toLowerCase()}_ratings`, foreignKey: params.foreignKey, sourceKey: 'id' });
+      params.parentModelClass.hasMany(childModel, { as: `ratings`, foreignKey: params.foreignKey, sourceKey: 'id' });
       childModel.belongsTo(params.parentModelClass, { as: params.parentModelName.toLowerCase(), foreignKey: params.foreignKey, targetKey: 'id' });
 
       params.userModel.hasMany(childModel, { as: `${params.parentModelName.toLowerCase()}_ratings_written`, foreignKey: 'writer_id', sourceKey: 'id' });

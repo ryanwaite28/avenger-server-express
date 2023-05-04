@@ -33,6 +33,7 @@ import {
   create_user_follow,
   delete_user_follow,
   get_random_users,
+  get_users_by_like_query,
   get_user_api_key, 
   get_user_by_email, 
   get_user_by_id, 
@@ -264,6 +265,29 @@ export class UsersService {
       };
       return serviceMethodResults;
     }
+  }
+
+  static async get_users_by_like_query(query: string, exclude_user_id?: number) {
+    if (!query) {
+      const serviceMethodResults: ServiceMethodResults = {
+        status: HttpStatusCode.BAD_REQUEST,
+        error: true,
+        info: {
+          message: `Query is required`
+        }
+      };
+      return serviceMethodResults;
+    }
+
+    const skill: IUser[] = await get_users_by_like_query(query, exclude_user_id);
+    const serviceMethodResults: ServiceMethodResults = {
+      status: HttpStatusCode.OK,
+      error: false,
+      info: {
+        data: skill
+      }
+    };
+    return serviceMethodResults;
   }
 
   static async check_session(request: Request): ServiceMethodAsyncResults {

@@ -320,7 +320,7 @@ export class NoticeService {
         };
         CommonSocketEventsHandler.emitEventToRoom({
           room: `NOTICE:${notice_id}`,
-          event: `NOTICE:${notice_id}:${AVENGER_EVENT_TYPES.NOTICE_REACTION_RESCINDED}`,
+          event: `NOTICE:${notice_id}:${AVENGER_EVENT_TYPES.REACTION_RESCINDED}`,
           data: {
             notice_id,
           }
@@ -335,7 +335,7 @@ export class NoticeService {
 
     CommonSocketEventsHandler.emitEventToRoom({
       room: `NOTICE:${notice_id}`,
-      event: `NOTICE:${notice_id}:${AVENGER_EVENT_TYPES.NEW_NOTICE_REACTION}`,
+      event: `NOTICE:${notice_id}:${AVENGER_EVENT_TYPES.NEW_REACTION}`,
       data: {
         notice_id,
       }

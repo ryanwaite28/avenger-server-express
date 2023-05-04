@@ -4,9 +4,9 @@ import {
   DATE, NOW,
   BOOLEAN,
   INTEGER,
-  Op, col, where, SyncOptions
+  UUIDV1
 } from 'sequelize';
-import { v4 as uuidv4 } from 'uuid';
+import { STATUSES } from '../enums/common.enum';
 
 import { AVENGER_ADMIN_ROLES, AVENGER_SKILL_STATUS, INTERVIEW_VIEW_STATE, MODELS } from '../enums/avenger.enum';
 import { MyModelStatic } from '../interfaces/common.interface';
@@ -131,7 +131,7 @@ export const UserEmailVerification = <MyModelStatic> sequelize.define('UserEmail
 
   user_id:                 { type: INTEGER, allowNull: false, references: { model: User, key: 'id' } },
   email:                   { type: STRING, allowNull: false },
-  verification_code:       { type: STRING, allowNull: false, unique: true, defaultValue: uuidv4 },
+  verification_code:       { type: STRING, allowNull: false, unique: true, defaultValue: UUIDV1 },
   verified:                { type: BOOLEAN, allowNull: false, defaultValue: false },
 }, common_model_options);
 
@@ -184,7 +184,7 @@ export const UserResetPasswordRequest = <MyModelStatic> sequelize.define('UserRe
 
   user_id:             { type: INTEGER, allowNull: false, references: { model: User, key: 'id' } },
   completed:           { type: BOOLEAN, allowNull: false, defaultValue: false },
-  unique_value:        { type: STRING, allowNull: false, unique: true, defaultValue: uuidv4 },
+  unique_value:        { type: STRING, allowNull: false, unique: true, defaultValue: UUIDV1 },
 }, common_model_options);
 
 
@@ -333,8 +333,47 @@ export const Interview = <MyModelStatic> sequelize.define('Interview', {
   video_key:                 { type: TEXT, allowNull: true },
 }, common_model_options);
 
+export const InterviewerRating = <MyModelStatic> sequelize.define('InterviewerRating', {
+  ...common_model_fields,
+
+  interview_id:         { type: INTEGER, allowNull: false, references: { model: Interview, key: 'id' } },
+  writer_id:            { type: INTEGER, allowNull: false, references: { model: User, key: 'id' } },
+  rating:               { type: INTEGER, allowNull: false, defaultValue: 5 },
+  title:                { type: STRING, allowNull: false, defaultValue: '' },
+  summary:              { type: TEXT, allowNull: false, defaultValue: '' },
+  image_link:           { type: STRING, allowNull: false, defaultValue: '' },
+  image_id:             { type: STRING, allowNull: false, defaultValue: '' },
+}, common_model_options);
+
+export const IntervieweeRating = <MyModelStatic> sequelize.define('IntervieweeRating', {
+  ...common_model_fields,
+
+  interview_id:         { type: INTEGER, allowNull: false, references: { model: Interview, key: 'id' } },
+  writer_id:            { type: INTEGER, allowNull: false, references: { model: User, key: 'id' } },
+  rating:               { type: INTEGER, allowNull: false, defaultValue: 5 },
+  title:                { type: STRING, allowNull: false, defaultValue: '' },
+  summary:              { type: TEXT, allowNull: false, defaultValue: '' },
+  image_link:           { type: STRING, allowNull: false, defaultValue: '' },
+  image_id:             { type: STRING, allowNull: false, defaultValue: '' },
+}, common_model_options);
 
 
+// someone's request to upload an interview regarding an interviewer and interviewee
+export const InterviewerLinkRequest = <MyModelStatic> sequelize.define('InterviewerLinkRequest', {
+  ...common_model_fields,
+
+  owner_id:                  { type: INTEGER, allowNull: false, references: { model: User, key: 'id' } },
+  interviewer_id:            { type: INTEGER, allowNull: true, references: { model: User, key: 'id' } },
+  interviewer_status:        { type: STRING, allowNull: false, defaultValue: STATUSES.PENDING },
+}, common_model_options);
+
+export const IntervieweeLinkRequest = <MyModelStatic> sequelize.define('IntervieweeLinkRequest', {
+  ...common_model_fields,
+
+  owner_id:                  { type: INTEGER, allowNull: false, references: { model: User, key: 'id' } },
+  interviewee_id:            { type: INTEGER, allowNull: true, references: { model: User, key: 'id' } },
+  interviewee_status:        { type: STRING, allowNull: false, defaultValue: STATUSES.PENDING },
+}, common_model_options);
 
 
 
@@ -421,7 +460,7 @@ export const ContentReported = <MyModelStatic> sequelize.define('ContentReported
 export const ApiKey = <MyModelStatic> sequelize.define('ApiKey', {
   ...common_model_fields,
 
-  key:                 { type: STRING, allowNull: false, defaultValue: uuidv4 },
+  key:                 { type: STRING, allowNull: false, defaultValue: UUIDV1 },
   firstname:           { type: STRING, allowNull: false, defaultValue: '' },
   middlename:          { type: STRING, allowNull: true, defaultValue: '' },
   lastname:            { type: STRING, allowNull: false, defaultValue: '' },
@@ -511,24 +550,6 @@ export const InterviewCoreModels = createChildCoreModels({
     { childModelName: MODELS.RATING },
   ]
 });
-export const InterviewerCoreModels = createChildCoreModels({
-  userModel: User,
-  parentModelClass: Interview,
-  parentModelName: `Interviewer`,
-  foreignKey: `interview_id`,
-  childrenModelDefs: [
-    { childModelName: MODELS.RATING },
-  ]
-});
-export const IntervieweeCoreModels = createChildCoreModels({
-  userModel: User,
-  parentModelClass: Interview,
-  parentModelName: `Interviewee`,
-  foreignKey: `interview_id`,
-  childrenModelDefs: [
-    { childModelName: MODELS.RATING },
-  ]
-});
 
 export const QuestionSocialModels = createCommonGenericModelSocialModels({
   userModel: User,
@@ -614,8 +635,8 @@ Skill.belongsTo(NoticeSkills, { as: 'skill_notice', foreignKey: 'id', targetKey:
 
 
 export const InterviewSkills = <MyModelStatic> sequelize.define(`InterviewSkills`, {}, common_model_options);
-Skill.belongsToMany(Interview, { through: InterviewSkills, foreignKey: `skill_id` });
-Interview.belongsToMany(Skill, { through: InterviewSkills, foreignKey: `interview_id` });
+Skill.belongsToMany(Interview, { as: 'interviews', through: InterviewSkills, foreignKey: `skill_id` });
+Interview.belongsToMany(Skill, { as: 'skills', through: InterviewSkills, foreignKey: `interview_id` });
 
 InterviewSkills.hasOne(Interview, { as: 'interview', foreignKey: 'id', sourceKey: 'interview_id' });
 Interview.belongsTo(InterviewSkills, { as: 'interview_skill', foreignKey: 'id', targetKey: 'interview_id' });
@@ -664,6 +685,17 @@ Interview.belongsTo(User, { as: 'interviewer', foreignKey: 'interviewer_id', tar
 User.hasMany(Interview, { as: 'interviews_interviewee', foreignKey: 'interviewee_id', sourceKey: 'id' });
 Interview.belongsTo(User, { as: 'interviewee', foreignKey: 'interviewee_id', targetKey: 'id' });
 
+
+Interview.hasMany(InterviewerRating, { as: 'interviewer_ratings', foreignKey: 'interview_id', sourceKey: 'id' });
+InterviewerRating.belongsTo(User, { as: 'interview', foreignKey: 'interview_id', targetKey: 'id' });
+Interview.hasMany(IntervieweeRating, { as: 'interviewee_ratings', foreignKey: 'interview_id', sourceKey: 'id' });
+IntervieweeRating.belongsTo(User, { as: 'interview', foreignKey: 'interview_id', targetKey: 'id' });
+
+
+User.hasMany(InterviewerRating, { as: 'interviewer_ratings_written', foreignKey: 'writer_id', sourceKey: 'id' });
+InterviewerRating.belongsTo(User, { as: 'writer', foreignKey: 'writer_id', targetKey: 'id' });
+User.hasMany(IntervieweeRating, { as: 'interviewee_ratings_written', foreignKey: 'writer_id', sourceKey: 'id' });
+IntervieweeRating.belongsTo(User, { as: 'writer', foreignKey: 'writer_id', targetKey: 'id' });
 
 
 // Question / Answer

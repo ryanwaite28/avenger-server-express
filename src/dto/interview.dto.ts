@@ -6,7 +6,8 @@ import {
   IsString,
   Matches,
   IsEnum,
-  ValidateIf
+  ValidateIf,
+  IsNumber
 } from 'class-validator';
 import {
   GENERIC_TEXT_REGEX, YOUTUBE_URL_EMBED
@@ -95,6 +96,10 @@ export class InterviewCreateDto {
   @IsOptional()
   @IsString()
   video_key: string | null;
+
+  @IsOptional()
+  @IsInt({ each: true })
+  skill_ids: number[];
 }
 
 export class InterviewUpdateDto {
